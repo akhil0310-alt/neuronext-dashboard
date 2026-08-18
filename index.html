@@ -1,0 +1,1010 @@
+<title>NeuroNext — Amazon Performance</title>
+<style>
+  :root {
+    --page: #F0F2F4;
+    --surface: #FFFFFF;
+    --surface-2: #F5F6F8;
+    --border: rgba(15,23,42,0.07);
+    --border-strong: rgba(15,23,42,0.14);
+    --ink: #14181F;
+    --ink-2: #4B5563;
+    --ink-muted: #8A93A3;
+    --grid: #E9EBEE;
+    --baseline: #D2D6DC;
+
+    --series-1: #0EA893;
+    --series-1-soft: #DFF5F1;
+    --series-2: #E8A23D;
+    --series-2-soft: #FCEEDA;
+
+    --good: #1AA260;
+    --good-soft: #E1F5EA;
+    --critical: #D9463D;
+    --critical-soft: #FBE7E6;
+    --pct-blue: #2A6FDB;
+
+    --font-ui: -apple-system, "Segoe UI", "Segoe UI Variable", Roboto, Helvetica, Arial, sans-serif;
+    --shadow-card: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    color-scheme: light;
+  }
+
+  /* Deliberately single-theme (light) — this dashboard does not follow system dark mode. */
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- header ---------- */
+  header.top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .brand-block { display: flex; flex-direction: column; gap: 4px; }
+  .eyebrow {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--series-1);
+  }
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .sub { color: var(--ink-2); font-size: 13.5px; }
+  .conn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 7px 12px 7px 10px;
+    box-shadow: var(--shadow-card);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); flex: none; }
+  .conn b { color: var(--ink); font-weight: 600; }
+  .conn-block { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .refresh-btn {
+    display: flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600;
+    color: var(--series-1); background: var(--series-1-soft); border: 1px solid transparent;
+    border-radius: 100px; padding: 6px 12px; cursor: pointer; transition: background .12s ease;
+  }
+  .refresh-btn:hover { background: var(--series-1); color: #fff; }
+  .refresh-btn.copied { background: var(--good); color: #fff; }
+  .refresh-icon { display: inline-block; font-size: 13px; }
+
+  /* ---------- section labels ---------- */
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.005em; }
+  .section-note { font-size: 12px; color: var(--ink-muted); }
+
+  /* ---------- top-level tabs ---------- */
+  .tab-nav { display: flex; gap: 6px; }
+  .tab-nav-btn {
+    font: inherit; font-size: 13px; font-weight: 700; color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 18px; cursor: pointer; transition: background .12s ease, color .12s ease, border-color .12s ease;
+    box-shadow: var(--shadow-card);
+  }
+  .tab-nav-btn:hover { background: var(--surface-2); }
+  .tab-nav-btn.active { background: var(--series-1); color: #fff; border-color: var(--series-1); }
+  .tab-panel { display: none; flex-direction: column; gap: 22px; }
+  .tab-panel.active { display: flex; }
+
+  /* ---------- inventory table ---------- */
+  table.inv-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 980px; }
+  table.inv-table th {
+    text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
+  }
+  table.inv-table th:first-child { text-align: left; padding-left: 0; }
+  table.inv-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.inv-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; }
+  table.inv-table tr:last-child td { border-bottom: none; }
+  table.inv-table tr.reorder td { background: var(--critical-soft); }
+  table.inv-table td.reorder-flag { font-weight: 700; color: var(--critical); }
+  table.inv-table td.ok-flag { color: var(--good); font-weight: 600; }
+
+  /* ---------- placeholder card ---------- */
+  .placeholder-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 60px 20px; text-align: center; color: var(--ink-muted); }
+  .placeholder-card .ph-icon { font-size: 28px; }
+  .placeholder-card .ph-title { font-size: 15px; font-weight: 700; color: var(--ink-2); }
+  .placeholder-card .ph-sub { font-size: 12.5px; max-width: 420px; }
+
+  /* ---------- KPI strip ---------- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--series-1);
+    border-radius: 10px;
+    padding: 14px 14px 12px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .kpi.accent-critical { border-left-color: var(--critical); }
+  .kpi.accent-good { border-left-color: var(--good); }
+  .kpi.accent-amber { border-left-color: var(--series-2); }
+  .kpi .label { font-size: 11.5px; color: var(--ink-muted); font-weight: 600; letter-spacing: 0.01em; }
+  .kpi .value {
+    font-size: 21px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .kpi .value.neg { color: var(--critical); }
+  .kpi .delta { font-size: 11.5px; font-weight: 600; display: flex; align-items: center; gap: 4px; color: var(--ink-muted); }
+  .kpi .delta.good { color: var(--good); }
+  .kpi .delta.crit { color: var(--critical); }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px 20px;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ---------- legend ---------- */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- bidirectional trend chart ---------- */
+  .trend-chart { position: relative; height: 230px; padding: 4px 4px 0; }
+  .trend-grid { position: absolute; inset: 0; background-image: repeating-linear-gradient(to top, var(--grid) 0, var(--grid) 1px, transparent 1px, transparent 20%); pointer-events: none; }
+  .trend-baseline { position: absolute; left: 0; right: 0; height: 1px; background: var(--border-strong); }
+  .trend-cols { position: absolute; inset: 0; display: flex; }
+  .trend-month { flex: 1; position: relative; display: flex; justify-content: center; }
+  .bar-pair { position: relative; width: 100%; height: 100%; }
+  .bar { width: 12px; position: absolute; border-radius: 3px; transition: filter .12s ease; cursor: default; }
+  .bar.revenue { background: var(--series-1); left: calc(50% - 21px); }
+  .bar.profit-before { background: var(--series-2); left: calc(50% - 6px); }
+  .bar.net-profit { background: var(--good); left: calc(50% + 9px); }
+  .bar.net-profit.is-neg { background: var(--critical); }
+  .bar:hover { filter: brightness(1.1); }
+  .trend-labels { display: flex; margin-top: 6px; }
+  .trend-labels span { flex: 1; text-align: center; font-size: 11px; color: var(--ink-muted); font-weight: 600; }
+  .trend-month.is-ytd { border-left: 1px dashed var(--border-strong); margin-left: 6px; padding-left: 6px; }
+  .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--page);
+    font-size: 11.5px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s ease;
+    z-index: 5;
+    font-variant-numeric: tabular-nums;
+  }
+  .trend-month:hover .tooltip { opacity: 1; }
+  .tooltip .t-row { display: flex; justify-content: space-between; gap: 10px; }
+  .tooltip .t-swatch { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-right: 5px; }
+
+  /* ---------- waterfall ---------- */
+  .waterfall { display: flex; gap: 6px; align-items: stretch; height: 168px; padding-top: 6px; }
+  .wf-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .wf-bar-col { position: relative; width: 100%; height: 118px; display: flex; align-items: flex-end; justify-content: center; }
+  .wf-bar { width: 68%; border-radius: 5px 5px 2px 2px; position: relative; }
+  .wf-bar.total { background: var(--series-1); }
+  .wf-bar.total.final { background: var(--series-1); }
+  .wf-bar.drop { background: var(--critical); opacity: 0.85; }
+  .wf-value { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .wf-value.neg { color: var(--critical); }
+  .wf-pct { font-size: 10.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-muted); margin-top: -4px; }
+  .wf-pct.neg { color: var(--critical); }
+  .wf-label { font-size: 10.5px; color: var(--ink-muted); font-weight: 600; text-align: center; line-height: 1.3; }
+
+  /* ---------- period filter ---------- */
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 12px; cursor: pointer; transition: background .12s ease, color .12s ease;
+  }
+  .filter-btn:hover { background: var(--border-strong); }
+  .filter-btn.active { background: var(--series-1); color: #fff; border-color: var(--series-1); }
+
+  /* ---------- fee table (month-wise) ---------- */
+  table.fee-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
+  table.fee-table tr.pct-row td { color: var(--pct-blue); font-size: 11px; }
+  table.fee-table tr.pct-row td:first-child { padding-left: 14px; }
+  table.fee-table th {
+    text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
+  }
+  table.fee-table th:first-child { text-align: left; padding-left: 0; }
+  table.fee-table th.ytd, table.fee-table th.pct { color: var(--ink); }
+  table.fee-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.fee-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; }
+  table.fee-table tr:last-child td { border-bottom: none; }
+  table.fee-table td.neg { color: var(--critical); }
+  table.fee-table td.pos { color: var(--good); }
+  table.fee-table td.ytd, table.fee-table td.pct { font-weight: 600; }
+  table.fee-table tr.total td { font-weight: 700; border-top: 1px solid var(--border-strong); padding-top: 9px; background: var(--surface-2); }
+  table.fee-table tr.total.final td { font-size: 12.5px; }
+
+  /* ---------- sku matrix table ---------- */
+  table.sku-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+  table.sku-table th {
+    text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
+  }
+  table.sku-table th:first-child { text-align: left; padding-left: 0; min-width: 190px; }
+  table.sku-table th.ytd { color: var(--ink); }
+  table.sku-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: middle; border-radius: 6px; }
+  table.sku-table td:first-child { text-align: left; padding-left: 0; border-radius: 0; }
+  table.sku-table tr:last-child td { border-bottom: none; }
+  table.sku-table .cell-rev { font-weight: 600; font-variant-numeric: tabular-nums; display: block; }
+  table.sku-table .cell-units { color: var(--ink-2); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; display: block; }
+  table.sku-table .cell-dash { color: var(--ink-muted); }
+  table.sku-table td.ytd .cell-rev { font-weight: 700; }
+  table.sku-table td.mom-up { background: var(--good-soft); }
+  table.sku-table td.mom-down { background: var(--critical-soft); }
+  table.sku-table .sku-name-cell { display: flex; flex-direction: column; gap: 1px; }
+  table.sku-table .sku-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+  table.sku-table .sku-code { font-size: 10px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .mom-key { display: flex; align-items: center; gap: 14px; font-size: 11.5px; color: var(--ink-muted); }
+  .mom-key span { display: inline-flex; align-items: center; gap: 5px; }
+  .mom-swatch { width: 10px; height: 10px; border-radius: 3px; }
+
+  .overflow-x { overflow-x: auto; }
+
+  /* ---------- details/table-view fallback ---------- */
+  details.table-view { font-size: 12.5px; }
+  details.table-view > summary {
+    cursor: pointer; font-weight: 600; color: var(--ink-2); list-style: none;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  details.table-view > summary::-webkit-details-marker { display: none; }
+  details.table-view > summary::before { content: "▸"; font-size: 10px; color: var(--ink-muted); transition: transform .12s ease; }
+  details.table-view[open] > summary::before { transform: rotate(90deg); }
+  details.table-view table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  details.table-view th, details.table-view td {
+    text-align: right; padding: 6px 8px; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--border);
+  }
+  details.table-view th:first-child, details.table-view td:first-child { text-align: left; }
+  details.table-view th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); }
+  details.table-view td.neg { color: var(--critical); }
+  details.table-view td.pos { color: var(--good); }
+
+  /* ---------- scope grid ---------- */
+  .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .scope-col { display: flex; flex-direction: column; gap: 8px; }
+  .scope-col h4 { margin: 0; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); }
+  .scope-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+  .scope-item .ic { flex: none; width: 15px; height: 15px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; margin-top: 1px; }
+  .scope-item.yes .ic { background: var(--good-soft); color: var(--good); }
+  .scope-item.no .ic { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--border-strong); }
+  .scope-item b { color: var(--ink); }
+
+  footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 11.5px; color: var(--ink-muted); padding-top: 6px; }
+
+  @media (max-width: 920px) {
+    .scope-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand-block">
+      <span class="eyebrow">NeuroNext FZ-LLC</span>
+      <h1>Amazon Performance Dashboard</h1>
+      <span class="sub">1 Jan – 18 Aug 2026 · Pulled directly from Amazon Selling Partner API</span>
+    </div>
+    <div class="conn-block">
+      <div class="conn">
+        <span class="dot"></span>
+        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>18 Aug 2026</b></span>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" type="button">
+        <span class="refresh-icon">⟳</span> Copy refresh request
+      </button>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <button class="tab-nav-btn active" id="tabBtnPnl" type="button">PNL</button>
+    <button class="tab-nav-btn" id="tabBtnInventory" type="button">Inventory</button>
+    <button class="tab-nav-btn" id="tabBtnAds" type="button">Ads</button>
+  </nav>
+
+  <div class="tab-panel active" id="tabPnl">
+
+  <!-- KPI STRIP -->
+  <section class="kpis">
+    <div class="kpi">
+      <span class="label">MTD revenue</span>
+      <span class="value">AED 4,693</span>
+      <span class="delta">Aug 1–18 · 20 orders · 20 units</span>
+    </div>
+    <div class="kpi accent-critical">
+      <span class="label">Net revenue</span>
+      <span class="value">AED 69,839</span>
+      <span class="delta crit">13.2% refund rate</span>
+    </div>
+    <div class="kpi accent-good">
+      <span class="label">Net proceeds</span>
+      <span class="value">AED 32,184</span>
+      <span class="delta">46.1% of net revenue</span>
+    </div>
+    <div class="kpi accent-critical">
+      <span class="label">Net profit</span>
+      <span class="value neg">−AED 1,791</span>
+      <span class="delta crit">−2.6% of net revenue</span>
+    </div>
+    <div class="kpi accent-amber">
+      <span class="label">Ad spend</span>
+      <span class="value">AED 20,422</span>
+      <span class="delta">25.4% of gross revenue</span>
+    </div>
+    <div class="kpi">
+      <span class="label">Revenue per day</span>
+      <span class="value">AED 349.6</span>
+      <span class="delta">1.36 units / day · 230d YTD</span>
+    </div>
+  </section>
+
+  <!-- REVENUE TREND -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Monthly revenue, profit before ads &amp; net profit</span>
+      <span class="section-note">AED · from Finances API settlement events</span>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Gross revenue</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Profit before ads</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--good)"></span>Net profit (positive)</span>
+      <span class="legend-item"><span class="swatch" style="background:var(--critical)"></span>Net profit (loss)</span>
+    </div>
+    <div class="trend-chart" id="trendChart"></div>
+    <details class="table-view">
+      <summary>View monthly figures as a table</summary>
+      <table>
+        <thead><tr><th>Month</th><th>Revenue</th><th>Profit before ads</th><th>Net profit</th><th>Orders</th><th>Units</th></tr></thead>
+        <tbody id="monthlyTable"></tbody>
+      </table>
+    </details>
+  </section>
+
+  <!-- WATERFALL -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Where the revenue goes</span>
+      <span class="section-note">Gross revenue → net proceeds (Amazon fees/ads only, excludes COGS), YTD 2026</span>
+    </div>
+    <div class="waterfall" id="waterfall"></div>
+  </section>
+
+  <!-- SKU x MONTH MATRIX -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Revenue by SKU</span>
+      <span class="section-note">Units / AED revenue by month, YTD 2026</span>
+    </div>
+    <div class="mom-key">
+      <span><span class="mom-swatch" style="background:var(--good-soft)"></span>Up vs. prior month</span>
+      <span><span class="mom-swatch" style="background:var(--critical-soft)"></span>Down vs. prior month</span>
+    </div>
+    <div class="overflow-x">
+      <table class="sku-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th>
+            <th class="ytd">YTD Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">BIRTH Single Breast Pump S39</span><span class="sku-code">LN-WRP7-RIMK</span></div></td><td class=""><span class="cell-rev">5,380</span><span class="cell-units">20u</span></td><td class="mom-down"><span class="cell-rev">2,490</span><span class="cell-units">10u</span></td><td class="mom-down"><span class="cell-rev">1,345</span><span class="cell-units">5u</span></td><td class="mom-up"><span class="cell-rev">5,528</span><span class="cell-units">22u</span></td><td class="mom-down"><span class="cell-rev">4,135</span><span class="cell-units">15u</span></td><td class="mom-down"><span class="cell-rev">2,940</span><span class="cell-units">10u</span></td><td class="mom-down"><span class="cell-rev">847</span><span class="cell-units">3u</span></td><td class="mom-down"><span class="cell-rev">598</span><span class="cell-units">2u</span></td><td class="ytd"><span class="cell-rev">23,263</span><span class="cell-units">87u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">AEROFRY Air Fryer 6L</span><span class="sku-code">TJ-FDH7-PNAI</span></div></td><td class=""><span class="cell-rev">636</span><span class="cell-units">4u</span></td><td class="mom-up"><span class="cell-rev">1,113</span><span class="cell-units">7u</span></td><td class="mom-up"><span class="cell-rev">1,240</span><span class="cell-units">8u</span></td><td class="mom-up"><span class="cell-rev">2,910</span><span class="cell-units">22u</span></td><td class="mom-up"><span class="cell-rev">3,068</span><span class="cell-units">21u</span></td><td class="mom-down"><span class="cell-rev">2,607</span><span class="cell-units">17u</span></td><td class="mom-down"><span class="cell-rev">1,939</span><span class="cell-units">13u</span></td><td class="mom-down"><span class="cell-rev">1,303</span><span class="cell-units">10u</span></td><td class="ytd"><span class="cell-rev">14,816</span><span class="cell-units">102u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">BIRTH Double Breast Pump S39</span><span class="sku-code">PY-51U9-NDO7</span></div></td><td class=""><span class="cell-rev">4,133</span><span class="cell-units">7u</span></td><td class="mom-down"><span class="cell-rev">2,276</span><span class="cell-units">4u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down"><span class="cell-rev">539</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">1,617</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">1,737</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">2,815</span><span class="cell-units">5u</span></td><td class="mom-down"><span class="cell-rev">539</span><span class="cell-units">1u</span></td><td class="ytd"><span class="cell-rev">13,657</span><span class="cell-units">24u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">AEROFRY 9L Dual-Zone Air Fryer</span><span class="sku-code">62-0VFC-64SJ</span></div></td><td class="cell-dash">–</td><td class=""><span class="cell-rev">359</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class="mom-up"><span class="cell-rev">969</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">2,353</span><span class="cell-units">7u</span></td><td class="mom-up"><span class="cell-rev">2,473</span><span class="cell-units">7u</span></td><td class="mom-down"><span class="cell-rev">1,954</span><span class="cell-units">6u</span></td><td class="mom-down"><span class="cell-rev">1,316</span><span class="cell-units">4u</span></td><td class="ytd"><span class="cell-rev">9,424</span><span class="cell-units">28u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">BIRTH Double Breast Pump S12A</span><span class="sku-code">NR-O1LQ-E1UK</span></div></td><td class=""><span class="cell-rev">1,117</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">1,356</span><span class="cell-units">4u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down"><span class="cell-rev">319</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">798</span><span class="cell-units">2u</span></td><td class="mom-up"><span class="cell-rev">1,157</span><span class="cell-units">3u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down"><span class="cell-rev">399</span><span class="cell-units">1u</span></td><td class="ytd"><span class="cell-rev">5,146</span><span class="cell-units">14u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">LITTLE MOMMY Double Breast Pump</span><span class="sku-code">S39DBPDB</span></div></td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class=""><span class="cell-rev">897</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">1,495</span><span class="cell-units">5u</span></td><td class="mom-down"><span class="cell-rev">897</span><span class="cell-units">3u</span></td><td class=""><span class="cell-rev">897</span><span class="cell-units">3u</span></td><td class="mom-down"><span class="cell-rev">538</span><span class="cell-units">2u</span></td><td class="ytd"><span class="cell-rev">4,724</span><span class="cell-units">16u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">BIRTH Bluetooth Double Pump S39</span><span class="sku-code">7J-5E02-AAAN</span></div></td><td class="cell-dash">–</td><td class=""><span class="cell-rev">1,398</span><span class="cell-units">2u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="mom-down"><span class="cell-rev">699</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class="mom-up"><span class="cell-rev">1,398</span><span class="cell-units">2u</span></td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">3,495</span><span class="cell-units">5u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">LITTLE MOMMY Single Breast Pump</span><span class="sku-code">2D-JIOC-DYZ2</span></div></td><td class=""><span class="cell-rev">250</span><span class="cell-units">2u</span></td><td class="mom-down"><span class="cell-rev">149</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">1,049</span><span class="cell-units">8u</span></td><td class="mom-down"><span class="cell-rev">447</span><span class="cell-units">3u</span></td><td class="mom-up"><span class="cell-rev">894</span><span class="cell-units">6u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down"><span class="cell-rev">298</span><span class="cell-units">2u</span></td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">3,087</span><span class="cell-units">22u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">Aerofry 5.7L Smart Scale Fryer</span><span class="sku-code">AEROSC-6</span></div></td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class=""><span class="cell-rev">199</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">398</span><span class="cell-units">2u</span></td><td class="mom-down"><span class="cell-rev">199</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">557</span><span class="cell-units">3u</span></td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">1,353</span><span class="cell-units">7u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">BIRTH Single Breast Pump S12A</span><span class="sku-code">D4-2UK7-AM2Z</span></div></td><td class=""><span class="cell-rev">199</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class=""><span class="cell-rev">199</span><span class="cell-units">1u</span></td><td class="mom-up"><span class="cell-rev">398</span><span class="cell-units">2u</span></td><td class="mom-down cell-dash">–</td><td class=""><span class="cell-rev">398</span><span class="cell-units">2u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">1,194</span><span class="cell-units">6u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">Birth Manual Pump RH188</span><span class="sku-code">RH188SBPZ</span></div></td><td class="cell-dash">–</td><td class=""><span class="cell-rev">79</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class=""><span class="cell-rev">79</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">158</span><span class="cell-units">2u</span></td></tr>
+          <tr><td><div class="sku-name-cell"><span class="sku-name">Birth Electric Pump RH218</span><span class="sku-code">RH218SBPZ</span></div></td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class="cell-dash">–</td><td class=""><span class="cell-rev">99</span><span class="cell-units">1u</span></td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="mom-down cell-dash">–</td><td class="ytd"><span class="cell-rev">99</span><span class="cell-units">1u</span></td></tr>
+</tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PRODUCT PROFITABILITY -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Product-wise profitability</span>
+      <span class="section-note">AED — net of refunds. Amazon fees include storage (both allocated pro-rata by each SKU's share of gross revenue, since Amazon doesn't report either per SKU — commission, fulfillment and chargebacks within that figure ARE real per-SKU data). Ad spend is allocated the same way. COGS is sourced from real NEXTWAVE invoices for every SKU here.</span>
+    </div>
+    <div class="filter-bar" id="profitFilterBar"></div>
+    <div class="overflow-x">
+      <table class="fee-table" style="min-width:1320px">
+        <thead>
+          <tr>
+            <th>SKU</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
+            <th>Gross revenue</th><th>Refunds</th><th>Net revenue</th>
+            <th>COGS</th><th>Gross margin</th><th class="pct">Margin %</th>
+            <th>Amazon fees</th><th>Ad spend (alloc.)</th>
+            <th class="ytd">Net profit</th><th class="pct">Net margin %</th>
+          </tr>
+        </thead>
+        <tbody id="profitTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- COST PER UNIT -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Cost per unit &amp; recommended ASP</span>
+      <span class="section-note">Product cost, freight, duty and VAT are all built up in USD (the original supplier invoice currency) — only the final landed cost is converted to AED, at the fixed peg. ASPs are AED (Amazon.ae selling prices). Actual ASP is green if it clears a 60% gross margin, red if it doesn't. Every SKU here has a sourced cost breakdown (real NEXTWAVE invoices) — no estimates.</span>
+    </div>
+    <div class="overflow-x">
+      <table class="fee-table" style="min-width:1080px">
+        <thead><tr><th>SKU</th><th>Product cost (USD)</th><th>Freight (USD)</th><th>Duty (USD)</th><th>VAT (USD)</th><th>Landed cost/unit (USD)</th><th class="ytd">Landed cost/unit (AED)</th><th class="pct">Recommended ASP (60% margin)</th><th class="pct">Actual ASP</th><th class="pct">Margin % at actual ASP</th></tr></thead>
+        <tbody id="costTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- MONTHWISE PROFITABILITY -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Monthwise Profitability</span>
+      <span class="section-note">AED, monthly with YTD total — from Finances API. All % rows are % of gross revenue. Refunds are split by return disposition (FBA Customer Returns report) — proportional to each SKU-month's sellable vs non-sellable return count; a refund with no matching return record counts as non-sellable.</span>
+    </div>
+    <div class="overflow-x">
+      <table class="fee-table fee-breakdown-table">
+        <thead>
+          <tr>
+            <th>Line item</th>
+            <th class="ytd">YTD Total</th>
+            <th>Jan</th><th>Feb</th><th>Mar</th><th>Apr</th><th>May</th><th>Jun</th><th>Jul</th><th>Aug</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Gross revenue</td><td class="ytd">80,416</td><td>11,715</td><td>9,220</td><td>3,833</td><td>12,305</td><td>15,458</td><td>12,408</td><td>10,784</td><td>4,693</td></tr>
+          <tr><td>Refunds - sellable returns</td><td class="ytd neg">−3,387</td><td class="neg">−1,297</td><td>0</td><td>0</td><td class="neg">−493</td><td class="neg">−442</td><td class="neg">−996</td><td class="neg">−159</td><td>0</td></tr>
+          <tr><td>Refunds - non-sellable returns</td><td class="ytd neg">−7,190</td><td class="neg">−1,280</td><td class="neg">−976</td><td class="neg">−125</td><td class="neg">−1,037</td><td class="neg">−890</td><td class="neg">−957</td><td class="neg">−1,626</td><td class="neg">−299</td></tr>
+          <tr class="total"><td>Net revenue</td><td class="ytd">69,839</td><td>9,138</td><td>8,244</td><td>3,708</td><td>10,775</td><td>14,126</td><td>10,455</td><td>8,999</td><td>4,394</td></tr>
+          <tr class="pct-row"><td>Net revenue % (of gross)</td><td class="ytd">86.8%</td><td>78.0%</td><td>89.4%</td><td>96.7%</td><td>87.6%</td><td>91.4%</td><td>84.3%</td><td>83.4%</td><td>93.6%</td></tr>
+          <tr><td>COGS</td><td class="ytd neg">−33,975</td><td class="neg">−3,926</td><td class="neg">−3,746</td><td class="neg">−1,884</td><td class="neg">−5,732</td><td class="neg">−6,627</td><td class="neg">−5,072</td><td class="neg">−4,724</td><td class="neg">−2,264</td></tr>
+          <tr class="total"><td>Gross margin</td><td class="ytd">35,864</td><td>5,212</td><td>4,498</td><td>1,824</td><td>5,042</td><td>7,499</td><td>5,384</td><td>4,275</td><td>2,130</td></tr>
+          <tr class="pct-row"><td>Gross margin % (of gross)</td><td class="ytd">44.6%</td><td>44.5%</td><td>48.8%</td><td>47.6%</td><td>41.0%</td><td>48.5%</td><td>43.4%</td><td>39.6%</td><td>45.4%</td></tr>
+          <tr><td>Other costs (fees, storage, adj.)</td><td class="ytd neg">−17,233</td><td class="neg">−2,203</td><td class="neg">−1,977</td><td class="neg">−1,165</td><td class="neg">−2,583</td><td class="neg">−3,196</td><td class="neg">−2,573</td><td class="neg">−2,239</td><td class="neg">−1,298</td></tr>
+          <tr class="total"><td>Profit before advertising</td><td class="ytd">18,630</td><td>3,009</td><td>2,521</td><td>659</td><td>2,460</td><td>4,303</td><td>2,811</td><td>2,036</td><td>832</td></tr>
+          <tr class="pct-row"><td>Profit before ads % (of gross)</td><td class="ytd">23.2%</td><td>25.7%</td><td>27.3%</td><td>17.2%</td><td>20.0%</td><td>27.8%</td><td>22.7%</td><td>18.9%</td><td>17.7%</td></tr>
+          <tr><td>Advertising spend</td><td class="ytd neg">−20,422</td><td class="neg">−2,888</td><td class="neg">−3,029</td><td class="neg">−854</td><td class="neg">−5,064</td><td class="neg">−3,592</td><td class="neg">−2,966</td><td class="neg">−149</td><td class="neg">−1,879</td></tr>
+          <tr class="total final"><td>Net profit</td><td class="ytd neg">−1,791</td><td>121</td><td class="neg">−509</td><td class="neg">−195</td><td class="neg">−2,605</td><td>711</td><td class="neg">−156</td><td>1,887</td><td class="neg">−1,046</td></tr>
+          <tr class="pct-row"><td>Net profit % (of gross)</td><td class="ytd">−2.2%</td><td>1.0%</td><td>−5.5%</td><td>−5.1%</td><td>−21.2%</td><td>4.6%</td><td>−1.3%</td><td>17.5%</td><td>−22.3%</td></tr>
+</tbody>
+      </table>
+    </div>
+    <details class="table-view">
+      <summary>View "Other costs" breakdown (YTD)</summary>
+      <table>
+        <thead><tr><th>Component</th><th>AED</th><th>% of Gross Rev</th></tr></thead>
+        <tbody>
+          <tr><td>Referral commission</td><td class="neg">−12,118</td><td>−15.1%</td></tr>
+          <tr><td>FBA fulfillment fees</td><td class="neg">−4,540</td><td>−5.6%</td></tr>
+          <tr><td>Shipping &amp; COD chargebacks</td><td class="neg">−310</td><td>−0.4%</td></tr>
+          <tr><td>Shipping / payment charges</td><td class="pos">1,345</td><td>1.7%</td></tr>
+          <tr><td>Refund fee credits</td><td class="pos">1,418</td><td>1.8%</td></tr>
+          <tr><td>FBA storage &amp; inbound (prorated evenly across months — Amazon doesn't date-stamp this per shipment)</td><td class="neg">−3,136</td><td>−3.9%</td></tr>
+          <tr><td>Reimbursements / adjustments</td><td class="pos">107</td><td>0.1%</td></tr>
+          <tr><td><b>Total other costs</b></td><td class="neg"><b>−17,233</b></td><td><b>−21.4%</b></td></tr>
+</tbody>
+      </table>
+    </details>
+  </section>
+
+  <!-- RETURNS BREAKDOWN -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">Returns: sellable vs. non-sellable</span>
+      <span class="section-note">From the FBA Customer Returns report. Sellable returns get their COGS reversed above (the unit goes back to stock, so it was never actually consumed) — non-sellable (defective/customer-damaged) keep COGS charged, same as any refund with no return.</span>
+    </div>
+    <div class="overflow-x">
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>SKU</th><th>Sellable</th><th>Non-sellable</th>
+            <th class="ytd">Total returns</th><th>COGS reversed (AED)</th>
+          </tr>
+        </thead>
+        <tbody id="returnsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SCOPE -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">What's in this dashboard, and what isn't</span>
+      <span class="section-note">Amazon SP-API scopes, tested 14 Aug 2026</span>
+    </div>
+    <div class="scope-grid">
+      <div class="scope-col">
+        <h4>Live &amp; included</h4>
+        <div class="scope-item yes"><span class="ic">✓</span><span><b>Orders API</b> — order &amp; unit counts</span></div>
+        <div class="scope-item yes"><span class="ic">✓</span><span><b>Finances API</b> — revenue, fees, refunds, aggregate ad spend</span></div>
+        <div class="scope-item yes"><span class="ic">✓</span><span><b>FBA Inventory API</b> — sellable/reserved stock per SKU</span></div>
+        <div class="scope-item yes"><span class="ic">✓</span><span><b>Product cost for every SKU</b> — sourced directly from real NEXTWAVE proforma invoices/SOA (14 SKUs, 2026-08-15), no estimates remaining</span></div>
+      </div>
+      <div class="scope-col">
+        <h4>Needs more access or data</h4>
+        <div class="scope-item no"><span class="ic">×</span><span><b>Sessions, page views, Buy Box %, conversion rate</b> — needs the Reports API role added to the app in Seller Central, currently returns 403</span></div>
+        <div class="scope-item no"><span class="ic">×</span><span><b>PPC campaign detail</b> (impressions, clicks, ACOS by campaign) — needs a separate Amazon Ads API app; ad spend above is TACOS (spend ÷ total revenue), not per-SKU or per-campaign ACOS</span></div>
+      </div>
+    </div>
+  </section>
+
+  </div> <!-- /tabPnl -->
+
+  <!-- INVENTORY TAB -->
+  <div class="tab-panel" id="tabInventory">
+    <section class="card">
+      <div class="section-head">
+        <span class="section-title">Inventory &amp; reorder</span>
+        <span class="section-note">AZ Inv is live FBA inventory (SP-API). WH Inv is the "Neuronext SOH &amp; Outbound" tracker's Remaining stock per SKU, pulled 15 Aug 2026 — not live, refresh manually when the tracker changes. Reorder point assumes a 90-day transit/lead time: avg. daily sales × 90. SKUs with no tracker row or no Amazon SKU-tracker mapping are excluded.</span>
+      </div>
+      <div class="overflow-x">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>SKU</th><th>AZ Inv</th><th>WH Inv</th><th class="ytd">Total Inv</th>
+              <th>Units sold YTD</th><th>Avg daily sales</th>
+              <th>Reorder point (90d)</th><th>Days of cover</th>
+              <th>Suggested reorder qty</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="invTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ADS TAB -->
+  <div class="tab-panel" id="tabAds">
+    <section class="card">
+      <div class="placeholder-card">
+        <span class="ph-icon">📢</span>
+        <span class="ph-title">Ads view — coming soon</span>
+        <span class="ph-sub">PPC campaign detail (impressions, clicks, ACOS by campaign) needs a separate Amazon Ads API connection — not yet wired up. The Ad spend figures elsewhere in this dashboard are TACOS (spend ÷ total revenue) from the Finances API, not per-campaign performance.</span>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>Source: Amazon Selling Partner API (eu endpoint), marketplace A2VIGQ35RCS4UG · seller-reported figures, not independently audited</span>
+    <span>Built for NeuroNext FZ-LLC</span>
+  </footer>
+
+</div>
+
+<script>
+  // ---------- TAB SWITCHING ----------
+  const tabs = [
+    { btn: "tabBtnPnl", panel: "tabPnl" },
+    { btn: "tabBtnInventory", panel: "tabInventory" },
+    { btn: "tabBtnAds", panel: "tabAds" },
+  ];
+  tabs.forEach(t => {
+    document.getElementById(t.btn).addEventListener("click", () => {
+      tabs.forEach(o => {
+        document.getElementById(o.btn).classList.toggle("active", o === t);
+        document.getElementById(o.panel).classList.toggle("active", o === t);
+      });
+    });
+  });
+
+  const monthly = [
+    { m: "Jan", revenue: 11715.2, profitBefore: 3008.71, profit: 120.83, orders: 35, units: 37 },
+    { m: "Feb", revenue: 9220.0, profitBefore: 2520.6, profit: -508.55, orders: 29, units: 30 },
+    { m: "Mar", revenue: 3832.74, profitBefore: 659.2, profit: -194.62, orders: 22, units: 22 },
+    { m: "Apr", revenue: 12305.0, profitBefore: 2459.54, profit: -2604.82, orders: 53, units: 59 },
+    { m: "May", revenue: 15457.6, profitBefore: 4303.29, profit: 711.36, orders: 59, units: 62 },
+    { m: "Jun", revenue: 12408.3, profitBefore: 2810.83, profit: -155.59, orders: 45, units: 46 },
+    { m: "Jul", revenue: 10784.27, profitBefore: 2036.04, profit: 1886.67, orders: 38, units: 38 },
+    { m: "Aug", revenue: 4693.2, profitBefore: 832.23, profit: -1046.35, orders: 20, units: 20 },
+  ];
+const ytdBar = { m: "YTD", revenue: 80416.31, profitBefore: 18630.44, profit: -1791.07, orders: 301, units: 314 };
+
+  const monthKeys = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08"];
+  const monthLabels = { "2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 2026","2026-04":"Apr 2026","2026-05":"May 2026","2026-06":"Jun 2026","2026-07":"Jul 2026","2026-08":"Aug 2026" };
+
+  const fmt = n => "AED " + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+  // Single shared linear AED scale spanning the largest positive value (revenue)
+  // and the largest negative value (profit loss) - NOT independently normalized
+  // per direction, so the axis stays a single true scale, just split by a zero baseline.
+  const aboveMax = Math.max(...monthly.map(d => Math.max(d.revenue, d.profitBefore, d.profit)));
+  const belowMax = Math.max(0, ...monthly.map(d => Math.max(0, -d.profit)));
+  const totalSpan = aboveMax + belowMax;
+  const baselineFrac = belowMax / totalSpan; // fraction of chart height below the zero line
+
+  const trendEl = document.getElementById("trendChart");
+  const gridEl = document.createElement("div");
+  gridEl.className = "trend-grid";
+  trendEl.appendChild(gridEl);
+  const baselineEl = document.createElement("div");
+  baselineEl.className = "trend-baseline";
+  baselineEl.style.bottom = (baselineFrac * 100) + "%";
+  trendEl.appendChild(baselineEl);
+  const colsEl = document.createElement("div");
+  colsEl.className = "trend-cols";
+  trendEl.appendChild(colsEl);
+
+  function makeTrendCol(d, span, base, isYtd) {
+    const revH = (d.revenue / span) * 100;
+    const beforeH = (d.profitBefore / span) * 100;
+    const isNeg = d.profit < 0;
+    const netH = (Math.abs(d.profit) / span) * 100;
+    const wrap = document.createElement("div");
+    wrap.className = "trend-month" + (isYtd ? " is-ytd" : "");
+
+    const revBar = document.createElement("div");
+    revBar.className = "bar revenue";
+    revBar.style.bottom = (base * 100) + "%";
+    revBar.style.height = revH + "%";
+
+    const beforeBar = document.createElement("div");
+    beforeBar.className = "bar profit-before";
+    beforeBar.style.bottom = (base * 100) + "%";
+    beforeBar.style.height = beforeH + "%";
+
+    const netBar = document.createElement("div");
+    netBar.className = "bar net-profit" + (isNeg ? " is-neg" : "");
+    if (isNeg) {
+      netBar.style.bottom = ((base * 100) - netH) + "%";
+    } else {
+      netBar.style.bottom = (base * 100) + "%";
+    }
+    netBar.style.height = netH + "%";
+
+    const tip = document.createElement("div");
+    tip.className = "tooltip";
+    tip.innerHTML = `
+      <div class="t-row"><span><span class="t-swatch" style="background:var(--series-1)"></span>Revenue</span><b>&nbsp;${fmt(d.revenue)}</b></div>
+      <div class="t-row"><span><span class="t-swatch" style="background:var(--series-2)"></span>Profit before ads</span><b>&nbsp;${fmt(d.profitBefore)}</b></div>
+      <div class="t-row"><span><span class="t-swatch" style="background:${isNeg ? 'var(--critical)' : 'var(--good)'}"></span>Net profit</span><b>&nbsp;${fmt(d.profit)}</b></div>
+    `;
+    wrap.appendChild(tip);
+    wrap.appendChild(revBar);
+    wrap.appendChild(beforeBar);
+    wrap.appendChild(netBar);
+    return wrap;
+  }
+
+  monthly.forEach(d => colsEl.appendChild(makeTrendCol(d, totalSpan, baselineFrac, false)));
+
+  // YTD bar uses its OWN scale (YTD revenue dwarfs any single month) so the
+  // monthly comparison isn't compressed - visually separated with a divider.
+  const ytdAbove = Math.max(ytdBar.revenue, ytdBar.profitBefore, ytdBar.profit);
+  const ytdBelow = Math.max(0, -ytdBar.profit);
+  const ytdSpan = ytdAbove + ytdBelow;
+  const ytdBase = ytdBelow / ytdSpan;
+  colsEl.appendChild(makeTrendCol(ytdBar, ytdSpan, ytdBase, true));
+
+  const labelsEl = document.createElement("div");
+  labelsEl.className = "trend-labels";
+  monthly.concat([ytdBar]).forEach(d => {
+    const s = document.createElement("span");
+    s.textContent = d.m;
+    if (d === ytdBar) s.style.fontWeight = "800";
+    labelsEl.appendChild(s);
+  });
+  trendEl.parentNode.insertBefore(labelsEl, trendEl.nextSibling);
+
+  const monthlyTableEl = document.getElementById("monthlyTable");
+  monthly.concat([ytdBar]).forEach(d => {
+    const tr = document.createElement("tr");
+    if (d === ytdBar) tr.style.fontWeight = "700";
+    const profCls = d.profit < 0 ? ' class="neg"' : "";
+    tr.innerHTML = `<td>${d.m}${d === ytdBar ? "" : " 2026"}</td><td>${fmt(d.revenue)}</td><td>${fmt(d.profitBefore)}</td><td${profCls}>${fmt(d.profit)}</td><td>${d.orders}</td><td>${d.units}</td>`;
+    monthlyTableEl.appendChild(tr);
+  });
+
+  // ---------- PRODUCT PROFITABILITY (filterable by period) ----------
+const skuData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", ytd:{gross_revenue:23263.0,refunds:-3935.0,net_revenue:19328.0,cogs:8401.56,cogs_est:false,gross_margin:10926.44,margin_pct:56.5,amazon_fees:-3858.2,ad_alloc:-5907.58,net_profit:253.49,net_margin_pct:1.3,asp:222.16,cpu:97.69,units:87}, months:{"2026-01":{gross_revenue:5380.0,refunds:-996.0,net_revenue:4384.0,cogs:1953.85,gross_margin:2430.15,margin_pct:55.4,amazon_fees:-900.27,ad_alloc:-1326.21,net_profit:23.65,net_margin_pct:0.5,asp:219.2,units:20},"2026-02":{gross_revenue:2490.0,refunds:-498.0,net_revenue:1992.0,cogs:976.93,gross_margin:1015.07,margin_pct:51.0,amazon_fees:-424.27,ad_alloc:-818.07,net_profit:-333.13,net_margin_pct:-16.7,asp:199.2,units:10},"2026-03":{gross_revenue:1345.0,refunds:0.0,net_revenue:1345.0,cogs:488.46,gross_margin:856.54,margin_pct:63.7,amazon_fees:-264.49,ad_alloc:-299.63,net_profit:154.86,net_margin_pct:11.5,asp:269.0,units:5},"2026-04":{gross_revenue:5528.0,refunds:-996.0,net_revenue:4532.0,cogs:2051.54,gross_margin:2480.46,margin_pct:54.7,amazon_fees:-865.81,ad_alloc:-2275.15,net_profit:-836.61,net_margin_pct:-18.5,asp:206.0,units:22},"2026-05":{gross_revenue:4135.0,refunds:-299.0,net_revenue:3836.0,cogs:1465.39,gross_margin:2370.61,margin_pct:61.8,amazon_fees:-734.07,ad_alloc:-960.86,net_profit:570.82,net_margin_pct:14.9,asp:255.73,units:15},"2026-06":{gross_revenue:2940.0,refunds:-299.0,net_revenue:2641.0,cogs:976.93,gross_margin:1664.07,margin_pct:63.0,amazon_fees:-506.99,ad_alloc:-702.86,net_profit:361.35,net_margin_pct:13.7,asp:264.1,units:10},"2026-07":{gross_revenue:847.0,refunds:-548.0,net_revenue:299.0,cogs:293.08,gross_margin:5.92,margin_pct:2.0,amazon_fees:-84.44,ad_alloc:-11.73,net_profit:-121.04,net_margin_pct:-40.5,asp:99.67,units:3},"2026-08":{gross_revenue:598.0,refunds:-299.0,net_revenue:299.0,cogs:195.39,gross_margin:103.61,margin_pct:34.7,amazon_fees:-77.86,ad_alloc:-239.37,net_profit:-263.56,net_margin_pct:-88.1,asp:149.5,units:2}} },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", ytd:{gross_revenue:14816.4,refunds:-1526.3,net_revenue:13290.1,cogs:9096.94,cogs_est:false,gross_margin:4193.16,margin_pct:31.6,amazon_fees:-3142.39,ad_alloc:-3762.59,net_profit:-3289.6,net_margin_pct:-24.8,asp:130.3,cpu:95.76,units:102}, months:{"2026-01":{gross_revenue:636.0,refunds:-318.0,net_revenue:318.0,cogs:287.27,gross_margin:30.73,margin_pct:9.7,amazon_fees:-92.93,ad_alloc:-156.78,net_profit:-240.26,net_margin_pct:-75.6,asp:79.5,units:4},"2026-02":{gross_revenue:1113.0,refunds:-159.0,net_revenue:954.0,cogs:670.3,gross_margin:283.7,margin_pct:29.7,amazon_fees:-228.77,ad_alloc:-365.67,net_profit:-358.06,net_margin_pct:-37.5,asp:136.29,units:7},"2026-03":{gross_revenue:1240.2,refunds:0.0,net_revenue:1240.2,cogs:766.06,gross_margin:474.14,margin_pct:38.2,amazon_fees:-270.79,ad_alloc:-276.28,net_profit:-199.77,net_margin_pct:-16.1,asp:155.02,units:8},"2026-04":{gross_revenue:2909.7,refunds:-286.2,net_revenue:2623.5,cogs:2010.9,gross_margin:612.6,margin_pct:23.4,amazon_fees:-647.23,ad_alloc:-1197.54,net_profit:-1324.87,net_margin_pct:-50.5,asp:119.25,units:22},"2026-05":{gross_revenue:3068.3,refunds:-286.1,net_revenue:2782.2,cogs:1915.14,gross_margin:867.06,margin_pct:31.2,amazon_fees:-605.29,ad_alloc:-712.99,net_profit:-529.03,net_margin_pct:-19.0,asp:132.49,units:21},"2026-06":{gross_revenue:2607.2,refunds:-318.0,net_revenue:2289.2,cogs:1436.36,gross_margin:852.84,margin_pct:37.3,amazon_fees:-556.74,ad_alloc:-623.3,net_profit:-409.56,net_margin_pct:-17.9,asp:134.66,units:17},"2026-07":{gross_revenue:1939.0,refunds:-159.0,net_revenue:1780.0,cogs:1149.09,gross_margin:630.91,margin_pct:35.4,amazon_fees:-440.35,ad_alloc:-26.86,net_profit:93.23,net_margin_pct:5.2,asp:136.92,units:13},"2026-08":{gross_revenue:1303.0,refunds:0.0,net_revenue:1303.0,cogs:861.82,gross_margin:441.18,margin_pct:33.9,amazon_fees:-300.29,ad_alloc:-521.56,net_profit:-489.5,net_margin_pct:-37.6,asp:130.3,units:10}} },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", ytd:{gross_revenue:13656.57,refunds:-2216.18,net_revenue:11440.39,cogs:4295.42,cogs_est:false,gross_margin:7144.97,margin_pct:62.5,amazon_fees:-2067.18,ad_alloc:-3468.05,net_profit:1077.18,net_margin_pct:9.4,asp:476.68,cpu:195.25,units:24}, months:{"2026-01":{gross_revenue:4133.0,refunds:-1138.0,net_revenue:2995.0,cogs:976.23,gross_margin:2018.77,margin_pct:67.4,amazon_fees:-546.03,ad_alloc:-1018.81,net_profit:315.63,net_margin_pct:10.5,asp:427.86,units:7},"2026-02":{gross_revenue:2276.0,refunds:0.0,net_revenue:2276.0,cogs:780.99,gross_margin:1495.01,margin_pct:65.7,amazon_fees:-393.45,ad_alloc:-747.76,net_profit:257.04,net_margin_pct:11.3,asp:569.0,units:4},"2026-04":{gross_revenue:539.0,refunds:0.0,net_revenue:539.0,cogs:195.25,gross_margin:343.75,margin_pct:63.8,amazon_fees:-96.97,ad_alloc:-221.84,net_profit:7.78,net_margin_pct:1.4,asp:539.0,units:1},"2026-05":{gross_revenue:1617.3,refunds:0.0,net_revenue:1617.3,cogs:585.74,gross_margin:1031.56,margin_pct:63.8,amazon_fees:-288.47,ad_alloc:-375.82,net_profit:326.26,net_margin_pct:20.2,asp:539.1,units:3},"2026-06":{gross_revenue:1737.0,refunds:0.0,net_revenue:1737.0,cogs:585.74,gross_margin:1151.26,margin_pct:66.3,amazon_fees:-304.81,ad_alloc:-415.26,net_profit:376.32,net_margin_pct:21.7,asp:579.0,units:3},"2026-07":{gross_revenue:2815.27,refunds:-1078.18,net_revenue:1737.09,cogs:976.23,gross_margin:760.86,margin_pct:43.8,amazon_fees:-345.48,ad_alloc:-38.99,net_profit:274.05,net_margin_pct:15.8,asp:347.42,units:5},"2026-08":{gross_revenue:539.0,refunds:0.0,net_revenue:539.0,cogs:195.25,gross_margin:343.75,margin_pct:63.8,amazon_fees:-91.97,ad_alloc:-215.75,net_profit:-8.98,net_margin_pct:-1.7,asp:539.0,units:1}} },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", ytd:{gross_revenue:9424.3,refunds:-678.0,net_revenue:8746.3,cogs:3809.23,cogs_est:false,gross_margin:4937.07,margin_pct:56.4,amazon_fees:-1760.72,ad_alloc:-2393.28,net_profit:415.56,net_margin_pct:4.8,asp:312.37,cpu:146.51,units:28}, months:{"2026-02":{gross_revenue:359.0,refunds:0.0,net_revenue:359.0,cogs:146.51,gross_margin:212.49,margin_pct:59.2,amazon_fees:-71.58,ad_alloc:-117.95,net_profit:7.7,net_margin_pct:2.1,asp:359.0,units:1},"2026-04":{gross_revenue:969.3,refunds:0.0,net_revenue:969.3,cogs:439.53,gross_margin:529.77,margin_pct:54.7,amazon_fees:-194.04,ad_alloc:-398.93,net_profit:-94.08,net_margin_pct:-9.7,asp:323.1,units:3},"2026-05":{gross_revenue:2353.0,refunds:0.0,net_revenue:2353.0,cogs:879.05,gross_margin:1473.95,margin_pct:62.6,amazon_fees:-467.39,ad_alloc:-546.77,net_profit:400.11,net_margin_pct:17.0,asp:336.14,units:7},"2026-06":{gross_revenue:2473.0,refunds:-678.0,net_revenue:1795.0,cogs:879.05,gross_margin:915.95,margin_pct:51.0,amazon_fees:-383.23,ad_alloc:-591.21,net_profit:-136.62,net_margin_pct:-7.6,asp:256.43,units:7},"2026-07":{gross_revenue:1954.0,refunds:0.0,net_revenue:1954.0,cogs:879.05,gross_margin:1074.95,margin_pct:55.0,amazon_fees:-382.87,ad_alloc:-27.06,net_profit:593.99,net_margin_pct:30.4,asp:325.67,units:6},"2026-08":{gross_revenue:1316.0,refunds:0.0,net_revenue:1316.0,cogs:586.04,gross_margin:729.96,margin_pct:55.5,amazon_fees:-261.61,ad_alloc:-526.76,net_profit:-168.33,net_margin_pct:-12.8,asp:329.0,units:4}} },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", ytd:{gross_revenue:5146.1,refunds:-678.1,net_revenue:4468.0,cogs:2293.52,cogs_est:false,gross_margin:2174.48,margin_pct:48.7,amazon_fees:-829.69,ad_alloc:-1306.84,net_profit:-162.73,net_margin_pct:-3.6,asp:319.14,cpu:163.82,units:14}, months:{"2026-01":{gross_revenue:1117.0,refunds:0.0,net_revenue:1117.0,cogs:491.47,gross_margin:625.53,margin_pct:56.0,amazon_fees:-201.26,ad_alloc:-275.35,net_profit:111.55,net_margin_pct:10.0,asp:372.33,units:3},"2026-02":{gross_revenue:1356.0,refunds:-319.0,net_revenue:1037.0,cogs:655.29,gross_margin:381.71,margin_pct:36.8,amazon_fees:-188.24,ad_alloc:-445.5,net_profit:-309.68,net_margin_pct:-29.9,asp:259.25,units:4},"2026-04":{gross_revenue:319.0,refunds:0.0,net_revenue:319.0,cogs:163.82,gross_margin:155.18,margin_pct:48.6,amazon_fees:-51.27,ad_alloc:-131.29,net_profit:-37.55,net_margin_pct:-11.8,asp:319.0,units:1},"2026-05":{gross_revenue:798.0,refunds:0.0,net_revenue:798.0,cogs:327.65,gross_margin:470.35,margin_pct:58.9,amazon_fees:-144.97,ad_alloc:-185.43,net_profit:119.71,net_margin_pct:15.0,asp:399.0,units:2},"2026-06":{gross_revenue:1157.1,refunds:-359.1,net_revenue:798.0,cogs:491.47,gross_margin:306.53,margin_pct:38.4,amazon_fees:-170.08,ad_alloc:-276.62,net_profit:-176.73,net_margin_pct:-22.1,asp:266.0,units:3},"2026-08":{gross_revenue:399.0,refunds:0.0,net_revenue:399.0,cogs:163.82,gross_margin:235.18,margin_pct:58.9,amazon_fees:-73.87,ad_alloc:-159.71,net_profit:-31.73,net_margin_pct:-8.0,asp:399.0,units:1}} },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", ytd:{gross_revenue:4724.2,refunds:-897.0,net_revenue:3827.2,cogs:1964.21,cogs_est:false,gross_margin:1862.99,margin_pct:48.7,amazon_fees:-750.84,ad_alloc:-1199.7,net_profit:-271.77,net_margin_pct:-7.1,asp:239.2,cpu:130.95,units:16}, months:{"2026-04":{gross_revenue:897.0,refunds:0.0,net_revenue:897.0,cogs:392.84,gross_margin:504.16,margin_pct:56.2,amazon_fees:-157.69,ad_alloc:-369.18,net_profit:-51.28,net_margin_pct:-5.7,asp:299.0,units:3},"2026-05":{gross_revenue:1495.0,refunds:-598.0,net_revenue:897.0,cogs:523.79,gross_margin:373.21,margin_pct:41.6,amazon_fees:-204.01,ad_alloc:-347.4,net_profit:-216.11,net_margin_pct:-24.1,asp:179.4,units:5},"2026-06":{gross_revenue:897.0,refunds:-299.0,net_revenue:598.0,cogs:392.84,gross_margin:205.16,margin_pct:34.3,amazon_fees:-130.85,ad_alloc:-214.44,net_profit:-168.47,net_margin_pct:-28.2,asp:199.33,units:3},"2026-07":{gross_revenue:897.0,refunds:0.0,net_revenue:897.0,cogs:392.84,gross_margin:504.16,margin_pct:56.2,amazon_fees:-158.11,ad_alloc:-12.42,net_profit:301.02,net_margin_pct:33.6,asp:299.0,units:3},"2026-08":{gross_revenue:538.2,refunds:0.0,net_revenue:538.2,cogs:261.89,gross_margin:276.31,margin_pct:51.3,amazon_fees:-100.18,ad_alloc:-215.43,net_profit:-84.26,net_margin_pct:-15.7,asp:269.1,units:2}} },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", ytd:{gross_revenue:3495.0,refunds:0.0,net_revenue:3495.0,cogs:1090.52,cogs_est:false,gross_margin:2404.48,margin_pct:68.8,amazon_fees:-583.7,ad_alloc:-887.55,net_profit:796.94,net_margin_pct:22.8,asp:699.0,cpu:218.1,units:5}, months:{"2026-02":{gross_revenue:1398.0,refunds:0.0,net_revenue:1398.0,cogs:436.21,gross_margin:961.79,margin_pct:68.8,amazon_fees:-233.28,ad_alloc:-459.3,net_profit:209.78,net_margin_pct:15.0,asp:699.0,units:2},"2026-05":{gross_revenue:699.0,refunds:0.0,net_revenue:699.0,cogs:218.1,gross_margin:480.9,margin_pct:68.8,amazon_fees:-111.64,ad_alloc:-162.43,net_profit:189.1,net_margin_pct:27.1,asp:699.0,units:1},"2026-07":{gross_revenue:1398.0,refunds:0.0,net_revenue:1398.0,cogs:436.21,gross_margin:961.79,margin_pct:68.8,amazon_fees:-238.78,ad_alloc:-19.36,net_profit:652.83,net_margin_pct:46.7,asp:699.0,units:2}} },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", ytd:{gross_revenue:3086.74,refunds:-548.19,net_revenue:2538.55,cogs:1442.41,cogs_est:false,gross_margin:1096.14,margin_pct:43.2,amazon_fees:-528.74,ad_alloc:-783.87,net_profit:-336.84,net_margin_pct:-13.3,asp:115.39,cpu:68.69,units:22}, months:{"2026-01":{gross_revenue:250.2,refunds:-125.1,net_revenue:125.1,cogs:137.37,gross_margin:-12.27,margin_pct:-9.8,amazon_fees:-33.61,ad_alloc:-61.68,net_profit:-115.93,net_margin_pct:-92.7,asp:62.55,units:2},"2026-02":{gross_revenue:149.0,refunds:0.0,net_revenue:149.0,cogs:68.69,gross_margin:80.31,margin_pct:53.9,amazon_fees:-23.45,ad_alloc:-48.95,net_profit:1.58,net_margin_pct:1.1,asp:149.0,units:1},"2026-03":{gross_revenue:1048.54,refunds:-125.09,net_revenue:923.45,cogs:549.49,gross_margin:373.96,margin_pct:40.5,amazon_fees:-200.06,ad_alloc:-233.58,net_profit:-166.92,net_margin_pct:-18.1,asp:115.43,units:8},"2026-04":{gross_revenue:447.0,refunds:-149.0,net_revenue:298.0,cogs:137.37,gross_margin:160.63,margin_pct:53.9,amazon_fees:-46.88,ad_alloc:-183.97,net_profit:-84.46,net_margin_pct:-28.3,asp:99.33,units:3},"2026-05":{gross_revenue:894.0,refunds:-149.0,net_revenue:745.0,cogs:412.12,gross_margin:332.88,margin_pct:44.7,amazon_fees:-159.84,ad_alloc:-207.74,net_profit:-57.37,net_margin_pct:-7.7,asp:124.17,units:6},"2026-07":{gross_revenue:298.0,refunds:0.0,net_revenue:298.0,cogs:137.37,gross_margin:160.63,margin_pct:53.9,amazon_fees:-64.9,ad_alloc:-4.13,net_profit:80.77,net_margin_pct:27.1,asp:149.0,units:2}} },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", ytd:{gross_revenue:1353.0,refunds:0.0,net_revenue:1353.0,cogs:1048.8,cogs_est:false,gross_margin:304.2,margin_pct:22.5,amazon_fees:-294.44,ad_alloc:-343.59,net_profit:-386.59,net_margin_pct:-28.6,asp:193.29,cpu:149.83,units:7}, months:{"2026-04":{gross_revenue:199.0,refunds:0.0,net_revenue:199.0,cogs:149.83,gross_margin:49.17,margin_pct:24.7,amazon_fees:-45.64,ad_alloc:-81.9,net_profit:-84.71,net_margin_pct:-42.6,asp:199.0,units:1},"2026-05":{gross_revenue:398.0,refunds:0.0,net_revenue:398.0,cogs:299.66,gross_margin:98.34,margin_pct:24.7,amazon_fees:-87.9,ad_alloc:-92.48,net_profit:-92.13,net_margin_pct:-23.1,asp:199.0,units:2},"2026-06":{gross_revenue:199.0,refunds:0.0,net_revenue:199.0,cogs:149.83,gross_margin:49.17,margin_pct:24.7,amazon_fees:-46.59,ad_alloc:-47.57,net_profit:-51.28,net_margin_pct:-25.8,asp:199.0,units:1},"2026-07":{gross_revenue:557.0,refunds:0.0,net_revenue:557.0,cogs:449.48,gross_margin:107.52,margin_pct:19.3,amazon_fees:-114.31,ad_alloc:-7.71,net_profit:-34.76,net_margin_pct:-6.2,asp:185.67,units:3}} },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", ytd:{gross_revenue:1194.0,refunds:0.0,net_revenue:1194.0,cogs:478.42,cogs_est:false,gross_margin:715.58,margin_pct:59.9,amazon_fees:-238.38,ad_alloc:-303.21,net_profit:127.42,net_margin_pct:10.7,asp:199.0,cpu:79.74,units:6}, months:{"2026-01":{gross_revenue:199.0,refunds:0.0,net_revenue:199.0,cogs:79.74,gross_margin:119.26,margin_pct:59.9,amazon_fees:-37.37,ad_alloc:-49.05,net_profit:26.18,net_margin_pct:13.2,asp:199.0,units:1},"2026-03":{gross_revenue:199.0,refunds:0.0,net_revenue:199.0,cogs:79.74,gross_margin:119.26,margin_pct:59.9,amazon_fees:-37.37,ad_alloc:-44.33,net_profit:17.21,net_margin_pct:8.6,asp:199.0,units:1},"2026-04":{gross_revenue:398.0,refunds:0.0,net_revenue:398.0,cogs:159.47,gross_margin:238.53,margin_pct:59.9,amazon_fees:-82.24,ad_alloc:-163.8,net_profit:-20.2,net_margin_pct:-5.1,asp:199.0,units:2},"2026-06":{gross_revenue:398.0,refunds:0.0,net_revenue:398.0,cogs:159.47,gross_margin:238.53,margin_pct:59.9,amazon_fees:-81.4,ad_alloc:-95.15,net_profit:49.4,net_margin_pct:12.4,asp:199.0,units:2}} },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", ytd:{gross_revenue:158.0,refunds:0.0,net_revenue:158.0,cogs:22.09,cogs_est:false,gross_margin:135.91,margin_pct:86.0,amazon_fees:-39.84,ad_alloc:-40.12,net_profit:49.78,net_margin_pct:31.5,asp:79.0,cpu:11.05,units:2}, months:{"2026-02":{gross_revenue:79.0,refunds:0.0,net_revenue:79.0,cogs:11.05,gross_margin:67.95,margin_pct:86.0,amazon_fees:-22.42,ad_alloc:-25.95,net_profit:16.22,net_margin_pct:20.5,asp:79.0,units:1},"2026-07":{gross_revenue:79.0,refunds:0.0,net_revenue:79.0,cogs:11.05,gross_margin:67.95,margin_pct:86.0,amazon_fees:-17.42,ad_alloc:-1.09,net_profit:46.57,net_margin_pct:58.9,asp:79.0,units:1}} },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", ytd:{gross_revenue:99.0,refunds:-99.0,net_revenue:0.0,cogs:31.84,cogs_est:false,gross_margin:-31.84,margin_pct:null,amazon_fees:-3.1,ad_alloc:-25.14,net_profit:-63.95,net_margin_pct:null,asp:0.0,cpu:31.84,units:1}, months:{"2026-04":{gross_revenue:99.0,refunds:-99.0,net_revenue:0.0,cogs:31.84,gross_margin:-31.84,margin_pct:null,amazon_fees:-3.1,ad_alloc:-40.75,net_profit:-78.84,net_margin_pct:null,asp:0.0,units:1}} },
+  ];
+
+const costTable = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", is_est:false, product_cost_usd:21.93, freight_usd:2.19, duty_usd:1.21, vat_usd:1.27, landed_cost_usd:26.6, landed_cost:97.69, rec_asp:244.23, actual_asp:267.39 },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", is_est:false, product_cost_usd:21.5, freight_usd:2.15, duty_usd:1.18, vat_usd:1.24, landed_cost_usd:26.07, landed_cost:95.76, rec_asp:239.39, actual_asp:145.26 },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", is_est:false, product_cost_usd:43.84, freight_usd:4.38, duty_usd:2.41, vat_usd:2.53, landed_cost_usd:53.16, landed_cost:195.25, rec_asp:488.12, actual_asp:569.02 },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", is_est:false, product_cost_usd:32.9, freight_usd:3.29, duty_usd:1.81, vat_usd:1.9, landed_cost_usd:39.89, landed_cost:146.51, rec_asp:366.27, actual_asp:336.58 },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", is_est:false, product_cost_usd:36.78, freight_usd:3.68, duty_usd:2.02, vat_usd:2.12, landed_cost_usd:44.61, landed_cost:163.82, rec_asp:409.56, actual_asp:367.58 },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", is_est:false, product_cost_usd:29.4, freight_usd:2.94, duty_usd:1.62, vat_usd:1.7, landed_cost_usd:35.66, landed_cost:130.95, rec_asp:327.37, actual_asp:295.26 },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", is_est:false, product_cost_usd:48.97, freight_usd:4.9, duty_usd:2.69, vat_usd:2.83, landed_cost_usd:59.39, landed_cost:218.1, rec_asp:545.26, actual_asp:699.0 },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", is_est:false, product_cost_usd:15.42, freight_usd:1.54, duty_usd:0.85, vat_usd:0.89, landed_cost_usd:18.7, landed_cost:68.69, rec_asp:171.72, actual_asp:140.31 },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", is_est:false, product_cost_usd:33.64, freight_usd:3.36, duty_usd:1.85, vat_usd:1.94, landed_cost_usd:40.8, landed_cost:149.83, rec_asp:374.57, actual_asp:193.29 },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", is_est:false, product_cost_usd:17.9, freight_usd:1.79, duty_usd:0.98, vat_usd:1.03, landed_cost_usd:21.71, landed_cost:79.74, rec_asp:199.34, actual_asp:199.0 },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", is_est:false, product_cost_usd:2.48, freight_usd:0.25, duty_usd:0.14, vat_usd:0.14, landed_cost_usd:3.01, landed_cost:11.05, rec_asp:27.61, actual_asp:79.0 },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", is_est:false, product_cost_usd:7.15, freight_usd:0.71, duty_usd:0.39, vat_usd:0.41, landed_cost_usd:8.67, landed_cost:31.84, rec_asp:79.61, actual_asp:99.0 },
+    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", is_est:false, product_cost_usd:38.79, freight_usd:3.88, duty_usd:2.13, vat_usd:2.24, landed_cost_usd:47.04, landed_cost:172.77, rec_asp:431.92, actual_asp:null },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", is_est:false, product_cost_usd:18.29, freight_usd:1.83, duty_usd:1.01, vat_usd:1.06, landed_cost_usd:22.18, landed_cost:81.46, rec_asp:203.65, actual_asp:null },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", is_est:false, product_cost_usd:8.53, freight_usd:0.85, duty_usd:0.47, vat_usd:0.49, landed_cost_usd:10.34, landed_cost:37.99, rec_asp:94.98, actual_asp:null },
+  ];
+
+  // Aggregate AED $ figures: 0 decimals. Per-unit values (ASP, cost/unit, landed
+  // cost/unit, etc.): 1 decimal. Percentages: always 1 decimal.
+  const cellN0 = (v, cls) => v === null || v === undefined ? '<td class="cell-dash">—</td>' : `<td class="${cls||""}">${v < 0 ? "−" : ""}${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>`;
+  const cellN1 = (v, cls) => v === null || v === undefined ? '<td class="cell-dash">—</td>' : `<td class="${cls||""}">${v < 0 ? "−" : ""}${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
+  const cellPct = v => v === null || v === undefined ? '<td class="pct cell-dash">—</td>' : `<td class="pct ${v<0?"neg":""}">${v<0?"−":""}${Math.abs(v).toFixed(1)}%</td>`;
+
+  function renderProfitTable(period) {
+    const tbody = document.getElementById("profitTableBody");
+    tbody.innerHTML = "";
+    const rows = [];
+    skuData.forEach(s => {
+      let d;
+      if (period === "YTD") d = s.ytd;
+      else if (period === "MTD") d = s.months[monthKeys[monthKeys.length - 1]];
+      else d = s.months[period];
+      if (!d) return;
+      rows.push({ sku: s.sku, name: s.name, est: s.ytd.cogs_est, d });
+    });
+    // No re-sort here - skuData is already baked in the canonical order (matches the
+    // "Revenue by SKU" table, YTD gross revenue descending) so every table on the
+    // dashboard shows SKUs in the same row order, for every period filter.
+    const tot = { gross_revenue:0, refunds:0, net_revenue:0, cogs:0, gross_margin:0, amazon_fees:0, ad_alloc:0, net_profit:0, units:0 };
+    rows.forEach(r => {
+      const d = r.d;
+      const cogsCell = d.cogs === 0 && d.net_revenue === 0 ? '<td class="neg">− 0</td>' :
+        `<td class="neg">−${Math.abs(d.cogs).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>`;
+      const cpu = d.units ? (d.cogs / d.units) : null;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${r.name}</td>` +
+        `<td>${d.units || 0}</td>` +
+        cellN1(d.asp) + cellN1(cpu) +
+        cellN0(d.gross_revenue) + cellN0(d.refunds, "neg") + cellN0(d.net_revenue) +
+        cogsCell + cellN0(d.gross_margin) + cellPct(d.margin_pct) +
+        cellN0(d.amazon_fees) + cellN0(d.ad_alloc) +
+        `<td class="ytd ${d.net_profit<0?"neg":""}">${d.net_profit<0?"−":""}${Math.abs(d.net_profit).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>` +
+        cellPct(d.net_margin_pct);
+      tbody.appendChild(tr);
+      tot.gross_revenue += d.gross_revenue; tot.refunds += d.refunds; tot.net_revenue += d.net_revenue;
+      tot.cogs += d.cogs; tot.gross_margin += d.gross_margin;
+      tot.amazon_fees += d.amazon_fees; tot.ad_alloc += d.ad_alloc; tot.net_profit += d.net_profit;
+      tot.units += d.units || 0;
+    });
+    const totRow = document.createElement("tr");
+    totRow.className = "total";
+    const totMargin = tot.net_revenue ? (tot.gross_margin / tot.net_revenue * 100) : null;
+    const totNetMargin = tot.net_revenue ? (tot.net_profit / tot.net_revenue * 100) : null;
+    const totAsp = tot.units ? (tot.net_revenue / tot.units) : null;
+    const totCpu = tot.units ? (tot.cogs / tot.units) : null;
+    totRow.innerHTML = `<td>Total (${rows.length} SKU${rows.length===1?"":"s"} with sales this period)</td>` +
+      `<td>${tot.units}</td>` +
+      cellN1(totAsp) + cellN1(totCpu) +
+      cellN0(tot.gross_revenue) + cellN0(tot.refunds, "neg") + cellN0(tot.net_revenue) +
+      `<td class="neg">−${Math.abs(tot.cogs).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>` +
+      cellN0(tot.gross_margin) + cellPct(totMargin) +
+      cellN0(tot.amazon_fees) + cellN0(tot.ad_alloc) +
+      `<td class="ytd ${tot.net_profit<0?"neg":""}">${tot.net_profit<0?"−":""}${Math.abs(tot.net_profit).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>` +
+      cellPct(totNetMargin);
+    tbody.appendChild(totRow);
+  }
+
+  const filterBarEl = document.getElementById("profitFilterBar");
+  const periods = monthKeys.concat(["MTD", "YTD"]);
+  periods.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (p === "YTD" ? " active" : "");
+    btn.textContent = p === "MTD" ? "MTD" : p === "YTD" ? "YTD" : monthLabels[p].slice(0,3);
+    btn.addEventListener("click", () => {
+      filterBarEl.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderProfitTable(p);
+    });
+    filterBarEl.appendChild(btn);
+  });
+  renderProfitTable("YTD");
+
+  // ---------- COST PER UNIT TABLE ----------
+  const costTableEl = document.getElementById("costTableBody");
+  // No re-sort here either - costTable is already baked in the canonical order
+  // (matches "Revenue by SKU"), same reasoning as the profitability table above.
+  costTable.forEach(r => {
+    const tr = document.createElement("tr");
+    const dash = '<td class="cell-dash">—</td>';
+    const hasAsp = r.actual_asp !== null && r.actual_asp !== undefined && r.actual_asp > 0;
+    const meetsTarget = hasAsp && r.rec_asp !== null && r.actual_asp >= r.rec_asp;
+    const aspCls = hasAsp && r.rec_asp !== null ? (meetsTarget ? "pos" : "neg") : "";
+    const marginAtActual = hasAsp && r.landed_cost !== null ? ((r.actual_asp - r.landed_cost) / r.actual_asp * 100) : null;
+    tr.innerHTML = `<td>${r.name}</td>` +
+      (r.product_cost_usd === null || r.product_cost_usd === undefined ? dash : `<td>$${r.product_cost_usd.toFixed(1)}</td>`) +
+      (r.freight_usd === null || r.freight_usd === undefined ? dash : `<td>$${r.freight_usd.toFixed(1)}</td>`) +
+      (r.duty_usd === null || r.duty_usd === undefined ? dash : `<td>$${r.duty_usd.toFixed(1)}</td>`) +
+      (r.vat_usd === null || r.vat_usd === undefined ? dash : `<td>$${r.vat_usd.toFixed(1)}</td>`) +
+      `<td>${r.landed_cost_usd === null || r.landed_cost_usd === undefined ? "—" : "$" + r.landed_cost_usd.toFixed(1)}</td>` +
+      `<td class="ytd">${r.landed_cost === null ? "—" : r.landed_cost.toFixed(1)}</td>` +
+      `<td class="pct">${r.rec_asp === null ? "—" : r.rec_asp.toFixed(1)}</td>` +
+      `<td class="pct ${aspCls}">${hasAsp ? r.actual_asp.toFixed(1) : "—"}</td>` +
+      `<td class="pct ${marginAtActual !== null && marginAtActual < 0 ? "neg" : ""}">${marginAtActual === null ? "—" : marginAtActual.toFixed(1) + "%"}</td>`;
+    costTableEl.appendChild(tr);
+  });
+
+  // ---------- INVENTORY TAB ----------
+const invData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", az_inv:23, wh_inv:113, total_inv:136, units_sold_ytd:87, avg_daily_sales:0.378, reorder_point:34.0, days_of_cover:359.5, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", az_inv:21, wh_inv:209, total_inv:230, units_sold_ytd:102, avg_daily_sales:0.443, reorder_point:39.9, days_of_cover:518.6, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", az_inv:20, wh_inv:309, total_inv:329, units_sold_ytd:24, avg_daily_sales:0.104, reorder_point:9.4, days_of_cover:3152.9, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", az_inv:23, wh_inv:146, total_inv:169, units_sold_ytd:28, avg_daily_sales:0.122, reorder_point:11.0, days_of_cover:1388.2, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", az_inv:6, wh_inv:109, total_inv:115, units_sold_ytd:14, avg_daily_sales:0.061, reorder_point:5.5, days_of_cover:1889.3, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", az_inv:14, wh_inv:243, total_inv:257, units_sold_ytd:16, avg_daily_sales:0.07, reorder_point:6.3, days_of_cover:3694.4, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", az_inv:7, wh_inv:16, total_inv:23, units_sold_ytd:5, avg_daily_sales:0.022, reorder_point:2.0, days_of_cover:1058.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", az_inv:13, wh_inv:256, total_inv:269, units_sold_ytd:22, avg_daily_sales:0.096, reorder_point:8.6, days_of_cover:2812.3, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", az_inv:5, wh_inv:177, total_inv:182, units_sold_ytd:7, avg_daily_sales:0.03, reorder_point:2.7, days_of_cover:5980.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", az_inv:8, wh_inv:48, total_inv:56, units_sold_ytd:6, avg_daily_sales:0.026, reorder_point:2.3, days_of_cover:2146.7, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", az_inv:1, wh_inv:16, total_inv:17, units_sold_ytd:2, avg_daily_sales:0.009, reorder_point:0.8, days_of_cover:1955.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", az_inv:0, wh_inv:32, total_inv:32, units_sold_ytd:1, avg_daily_sales:0.004, reorder_point:0.4, days_of_cover:7360.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", az_inv:0, wh_inv:1, total_inv:1, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", az_inv:0, wh_inv:6, total_inv:6, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+  ];
+
+  const invTableEl = document.getElementById("invTableBody");
+  invData.forEach(r => {
+    const tr = document.createElement("tr");
+    if (r.needs_reorder) tr.className = "reorder";
+    const whCell = r.wh_inv === null || r.wh_inv === undefined ? '<td class="cell-dash">—</td>' : `<td>${r.wh_inv.toLocaleString()}</td>`;
+    const doc = r.days_of_cover === null || r.days_of_cover === undefined ? "—" : r.days_of_cover.toLocaleString(undefined,{maximumFractionDigits:0});
+    const statusCell = r.needs_reorder
+      ? `<td class="reorder-flag">Reorder now</td>`
+      : `<td class="ok-flag">OK</td>`;
+    tr.innerHTML = `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+      `<td>${r.az_inv.toLocaleString()}</td>` +
+      whCell +
+      `<td class="ytd">${r.total_inv.toLocaleString()}</td>` +
+      `<td>${r.units_sold_ytd}</td>` +
+      `<td>${r.avg_daily_sales.toFixed(3)}</td>` +
+      `<td>${r.reorder_point.toFixed(1)}</td>` +
+      `<td>${doc}</td>` +
+      `<td>${r.suggested_reorder_qty}</td>` +
+      statusCell;
+    invTableEl.appendChild(tr);
+  });
+
+  // ---------- RETURNS BREAKDOWN ----------
+  const returnsData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", sellable:1, non_sellable:13, total_returns:14, cogs_reversed:97.69 },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", sellable:7, non_sellable:6, total_returns:13, cogs_reversed:670.3 },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", sellable:2, non_sellable:2, total_returns:4, cogs_reversed:390.49 },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", sellable:2, non_sellable:0, total_returns:2, cogs_reversed:293.02 },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", sellable:0, non_sellable:2, total_returns:2, cogs_reversed:0.0 },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", sellable:1, non_sellable:2, total_returns:3, cogs_reversed:130.95 },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", sellable:1, non_sellable:3, total_returns:4, cogs_reversed:68.69 },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", sellable:0, non_sellable:1, total_returns:1, cogs_reversed:0.0 },
+  ];
+
+  const returnsTableEl = document.getElementById("returnsTableBody");
+  returnsData.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+      `<td>${r.sellable}</td>` +
+      `<td>${r.non_sellable}</td>` +
+      `<td class="ytd">${r.total_returns}</td>` +
+      `<td>${r.cogs_reversed === null ? "—" : r.cogs_reversed.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+    returnsTableEl.appendChild(tr);
+  });
+
+  const wfMax = 80416.31;
+const steps = [
+    { label: "Gross revenue", value: 80416.31, type: "total" },
+    { label: "Refunds", value: -10577.77, type: "drop" },
+    { label: "Fees, storage & adj.", value: -17233.14, type: "drop" },
+    { label: "Ad spend", value: -20421.51, type: "drop" },
+    { label: "Net proceeds", value: 32183.89, type: "total final" },
+  ];
+  const wfEl = document.getElementById("waterfall");
+  steps.forEach(s => {
+    const h = Math.max(6, (Math.abs(s.value) / wfMax) * 100);
+    const isTotal = s.type.includes("total");
+    const pct = (s.value / wfMax * 100);
+    const pctStr = (pct >= 0 ? "" : "−") + Math.abs(pct).toFixed(1) + "%";
+    const col = document.createElement("div");
+    col.className = "wf-step";
+    col.innerHTML = `
+      <span class="wf-value ${s.value < 0 ? 'neg' : ''}">${s.value < 0 ? "−" : ""}${fmt(Math.abs(s.value))}</span>
+      <span class="wf-pct ${s.value < 0 ? 'neg' : ''}">${pctStr}</span>
+      <div class="wf-bar-col">
+        <div class="wf-bar ${isTotal ? (s.type.includes('final') ? 'total final' : 'total') : 'drop'}" style="height:${h}%"></div>
+      </div>
+      <span class="wf-label">${s.label}</span>
+    `;
+    wfEl.appendChild(col);
+  });
+
+  // ---------- REFRESH REQUEST (copy-to-clipboard, since this page cannot
+  // itself contact Amazon or Claude - see the header button for why) ----------
+  const refreshBtn = document.getElementById("refreshBtn");
+  const refreshText = "Refresh the NeuroNext Amazon dashboard now (run dashboard_refresh_data.py, rebuild the HTML, and republish to the existing artifact URL).";
+  refreshBtn.addEventListener("click", async () => {
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(refreshText);
+      ok = true;
+    } catch (e) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = refreshText;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e2) { ok = false; }
+    }
+    if (ok) {
+      refreshBtn.classList.add("copied");
+      refreshBtn.innerHTML = '<span class="refresh-icon">✓</span> Copied — paste into chat';
+      setTimeout(() => {
+        refreshBtn.classList.remove("copied");
+        refreshBtn.innerHTML = '<span class="refresh-icon">⟳</span> Copy refresh request';
+      }, 2500);
+    } else {
+      window.prompt("Copy this and send it to Claude:", refreshText);
+    }
+  });
+</script>
