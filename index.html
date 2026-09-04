@@ -128,6 +128,7 @@
   table.inv-table tr.reorder td { background: var(--critical-soft); }
   table.inv-table td.reorder-flag { font-weight: 700; color: var(--critical); }
   table.inv-table td.ok-flag { color: var(--good); font-weight: 600; }
+  table.inv-table tr.total td { font-weight: 700; border-top: 1px solid var(--border-strong); padding-top: 9px; background: var(--surface-2); }
 
   /* ---------- placeholder card ---------- */
   .placeholder-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 60px 20px; text-align: center; color: var(--ink-muted); }
@@ -925,6 +926,20 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       statusCell;
     invTableEl.appendChild(tr);
   });
+  {
+    const totalRow = document.createElement("tr");
+    totalRow.className = "total";
+    const sum = key => invData.reduce((s, r) => s + (r[key] || 0), 0);
+    totalRow.innerHTML = `<td>Total</td>` +
+      `<td>${sum("az_inv").toLocaleString()}</td>` +
+      `<td>${sum("wh_inv").toLocaleString()}</td>` +
+      `<td class="ytd">${sum("total_inv").toLocaleString()}</td>` +
+      `<td>${sum("units_sold_ytd").toLocaleString()}</td>` +
+      `<td></td><td></td><td></td>` +
+      `<td>${sum("suggested_reorder_qty").toLocaleString()}</td>` +
+      `<td></td>`;
+    invTableEl.appendChild(totalRow);
+  }
 
   // ---------- RETURNS BREAKDOWN ----------
   const returnsData = [
