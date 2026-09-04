@@ -593,7 +593,7 @@
     <section class="card">
       <div class="section-head">
         <span class="section-title">Inventory &amp; reorder</span>
-        <span class="section-note">AZ Inv is live FBA inventory (SP-API). WH Inv is the "Neuronext SOH &amp; Outbound" tracker's Remaining stock per SKU, pulled 15 Aug 2026 — not live, refresh manually when the tracker changes. Reorder point assumes a 90-day transit/lead time: avg. daily sales × 90. SKUs with no tracker row or no Amazon SKU-tracker mapping are excluded.</span>
+        <span class="section-note">AZ Inv is live FBA inventory (SP-API). WH Inv is pulled live from the "Neuronext SOH &amp; Outbound" tracker's Remaining stock per SKU on every refresh. Reorder point assumes a 90-day transit/lead time: avg. daily sales × 90. SKUs with no tracker row or no Amazon SKU-tracker mapping are excluded.</span>
       </div>
       <div class="overflow-x">
         <table class="inv-table">
@@ -888,20 +888,20 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
 
   // ---------- INVENTORY TAB ----------
   const invData = [
-    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", az_inv:22, wh_inv:113, total_inv:135, units_sold_ytd:88, avg_daily_sales:0.356, reorder_point:32.1, days_of_cover:378.9, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", az_inv:10, wh_inv:209, total_inv:219, units_sold_ytd:114, avg_daily_sales:0.462, reorder_point:41.5, days_of_cover:474.5, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", az_inv:17, wh_inv:309, total_inv:326, units_sold_ytd:29, avg_daily_sales:0.117, reorder_point:10.6, days_of_cover:2776.6, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", az_inv:18, wh_inv:146, total_inv:164, units_sold_ytd:34, avg_daily_sales:0.138, reorder_point:12.4, days_of_cover:1191.4, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", az_inv:6, wh_inv:109, total_inv:115, units_sold_ytd:14, avg_daily_sales:0.057, reorder_point:5.1, days_of_cover:2028.9, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", az_inv:14, wh_inv:243, total_inv:257, units_sold_ytd:16, avg_daily_sales:0.065, reorder_point:5.8, days_of_cover:3967.4, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", az_inv:22, wh_inv:165, total_inv:187, units_sold_ytd:88, avg_daily_sales:0.356, reorder_point:32.1, days_of_cover:524.9, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", az_inv:10, wh_inv:178, total_inv:188, units_sold_ytd:114, avg_daily_sales:0.462, reorder_point:41.5, days_of_cover:407.3, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", az_inv:17, wh_inv:399, total_inv:416, units_sold_ytd:29, avg_daily_sales:0.117, reorder_point:10.6, days_of_cover:3543.2, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", az_inv:18, wh_inv:492, total_inv:510, units_sold_ytd:34, avg_daily_sales:0.138, reorder_point:12.4, days_of_cover:3705.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", az_inv:6, wh_inv:115, total_inv:121, units_sold_ytd:14, avg_daily_sales:0.057, reorder_point:5.1, days_of_cover:2134.8, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", az_inv:14, wh_inv:271, total_inv:285, units_sold_ytd:16, avg_daily_sales:0.065, reorder_point:5.8, days_of_cover:4399.7, suggested_reorder_qty:0, needs_reorder:false },
     { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", az_inv:7, wh_inv:16, total_inv:23, units_sold_ytd:5, avg_daily_sales:0.02, reorder_point:1.8, days_of_cover:1136.2, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", az_inv:14, wh_inv:256, total_inv:270, units_sold_ytd:22, avg_daily_sales:0.089, reorder_point:8.0, days_of_cover:3031.4, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", az_inv:5, wh_inv:177, total_inv:182, units_sold_ytd:7, avg_daily_sales:0.028, reorder_point:2.6, days_of_cover:6422.0, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", az_inv:8, wh_inv:48, total_inv:56, units_sold_ytd:6, avg_daily_sales:0.024, reorder_point:2.2, days_of_cover:2305.3, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", az_inv:1, wh_inv:16, total_inv:17, units_sold_ytd:2, avg_daily_sales:0.008, reorder_point:0.7, days_of_cover:2099.5, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", az_inv:0, wh_inv:32, total_inv:32, units_sold_ytd:1, avg_daily_sales:0.004, reorder_point:0.4, days_of_cover:7904.0, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", az_inv:0, wh_inv:1, total_inv:1, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", az_inv:0, wh_inv:6, total_inv:6, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", az_inv:14, wh_inv:269, total_inv:283, units_sold_ytd:22, avg_daily_sales:0.089, reorder_point:8.0, days_of_cover:3177.3, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", az_inv:5, wh_inv:372, total_inv:377, units_sold_ytd:7, avg_daily_sales:0.028, reorder_point:2.6, days_of_cover:13302.7, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", az_inv:8, wh_inv:122, total_inv:130, units_sold_ytd:6, avg_daily_sales:0.024, reorder_point:2.2, days_of_cover:5351.7, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", az_inv:1, wh_inv:105, total_inv:106, units_sold_ytd:2, avg_daily_sales:0.008, reorder_point:0.7, days_of_cover:13091.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", az_inv:0, wh_inv:31, total_inv:31, units_sold_ytd:1, avg_daily_sales:0.004, reorder_point:0.4, days_of_cover:7657.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", az_inv:0, wh_inv:71, total_inv:71, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", az_inv:0, wh_inv:53, total_inv:53, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
   ];
 
   const invTableEl = document.getElementById("invTableBody");
