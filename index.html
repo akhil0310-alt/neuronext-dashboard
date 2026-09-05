@@ -240,6 +240,14 @@
   .filter-btn:hover { background: var(--border-strong); }
   .filter-btn.active { background: var(--series-1); color: #fff; border-color: var(--series-1); }
 
+  /* ---------- SKU analysis ---------- */
+  .sku-analysis-controls { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+  .sku-analysis-controls select {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+  }
+  .sku-analysis-summary { font-size: 12.5px; color: var(--ink-muted); }
+
   /* ---------- fee table (month-wise) ---------- */
   table.fee-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
   table.fee-table tr.pct-row td { color: var(--pct-blue); font-size: 11px; }
@@ -339,6 +347,7 @@
   <nav class="tab-nav">
     <button class="tab-nav-btn active" id="tabBtnPnl" type="button">PNL</button>
     <button class="tab-nav-btn" id="tabBtnInventory" type="button">Inventory</button>
+    <button class="tab-nav-btn" id="tabBtnSkuAnalysis" type="button">SKU Analysis</button>
     <button class="tab-nav-btn" id="tabBtnAds" type="button">Ads</button>
   </nav>
 
@@ -603,6 +612,29 @@
     </section>
   </div>
 
+  <!-- SKU ANALYSIS TAB -->
+  <div class="tab-panel" id="tabSkuAnalysis">
+    <section class="card">
+      <div class="section-head">
+        <span class="section-title">SKU Analysis</span>
+        <span class="section-note">Units sold and price point by date, from Finances API settlement events. One row per calendar day that SKU had at least one unit sale - days with no sale are simply absent, not zero rows.</span>
+      </div>
+      <div class="sku-analysis-controls">
+        <label for="skuAnalysisSelect">SKU:</label>
+        <select id="skuAnalysisSelect"></select>
+      </div>
+      <div class="sku-analysis-summary" id="skuAnalysisSummary"></div>
+      <div class="overflow-x">
+        <table class="fee-table" style="min-width:500px">
+          <thead>
+            <tr><th>Date</th><th>Units</th><th class="ytd">Price</th></tr>
+          </thead>
+          <tbody id="skuAnalysisTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
   <!-- ADS TAB -->
   <div class="tab-panel" id="tabAds">
     <section class="card">
@@ -626,6 +658,7 @@
   const tabs = [
     { btn: "tabBtnPnl", panel: "tabPnl" },
     { btn: "tabBtnInventory", panel: "tabInventory" },
+    { btn: "tabBtnSkuAnalysis", panel: "tabSkuAnalysis" },
     { btn: "tabBtnAds", panel: "tabAds" },
   ];
   tabs.forEach(t => {
@@ -956,6 +989,59 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       `<td>${r.cogs_reversed === null ? "—" : r.cogs_reversed.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     returnsTableEl.appendChild(tr);
   });
+
+  // ---------- SKU ANALYSIS TAB ----------
+  const dailySalesData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", days:[{date:"2026-01-01",units:1,price:249.0},{date:"2026-01-09",units:2,price:249.0},{date:"2026-01-10",units:1,price:249.0},{date:"2026-01-11",units:1,price:249.0},{date:"2026-01-13",units:1,price:249.0},{date:"2026-01-15",units:2,price:249.0},{date:"2026-01-16",units:2,price:249.0},{date:"2026-01-17",units:1,price:249.0},{date:"2026-01-19",units:1,price:249.0},{date:"2026-01-21",units:1,price:299.0},{date:"2026-01-23",units:1,price:299.0},{date:"2026-01-25",units:2,price:299.0},{date:"2026-01-27",units:1,price:299.0},{date:"2026-01-29",units:2,price:299.0},{date:"2026-01-31",units:1,price:299.0},{date:"2026-02-04",units:1,price:249.0},{date:"2026-02-05",units:2,price:249.0},{date:"2026-02-07",units:1,price:249.0},{date:"2026-02-08",units:1,price:249.0},{date:"2026-02-13",units:1,price:249.0},{date:"2026-02-20",units:2,price:249.0},{date:"2026-02-21",units:1,price:249.0},{date:"2026-02-28",units:1,price:249.0},{date:"2026-03-02",units:1,price:249.0},{date:"2026-03-05",units:1,price:299.0},{date:"2026-03-21",units:1,price:249.0},{date:"2026-03-27",units:1,price:299.0},{date:"2026-03-29",units:1,price:249.0},{date:"2026-04-05",units:1,price:299.0},{date:"2026-04-07",units:2,price:249.0},{date:"2026-04-08",units:1,price:249.0},{date:"2026-04-10",units:4,price:249.0},{date:"2026-04-13",units:5,price:249.0},{date:"2026-04-16",units:1,price:249.0},{date:"2026-04-17",units:2,price:249.0},{date:"2026-04-19",units:1,price:249.0},{date:"2026-04-21",units:1,price:249.0},{date:"2026-04-23",units:1,price:249.0},{date:"2026-04-26",units:1,price:249.0},{date:"2026-04-27",units:1,price:249.0},{date:"2026-04-30",units:1,price:249.0},{date:"2026-05-02",units:1,price:249.0},{date:"2026-05-03",units:1,price:249.0},{date:"2026-05-04",units:1,price:249.0},{date:"2026-05-06",units:2,price:249.0},{date:"2026-05-08",units:1,price:299.0},{date:"2026-05-10",units:1,price:249.0},{date:"2026-05-11",units:2,price:274.0},{date:"2026-05-15",units:1,price:299.0},{date:"2026-05-16",units:1,price:299.0},{date:"2026-05-20",units:1,price:299.0},{date:"2026-05-23",units:1,price:299.0},{date:"2026-05-28",units:2,price:299.0},{date:"2026-06-01",units:1,price:299.0},{date:"2026-06-02",units:1,price:299.0},{date:"2026-06-05",units:1,price:299.0},{date:"2026-06-06",units:1,price:299.0},{date:"2026-06-11",units:1,price:249.0},{date:"2026-06-21",units:2,price:299.0},{date:"2026-06-27",units:1,price:299.0},{date:"2026-06-28",units:1,price:299.0},{date:"2026-06-30",units:1,price:299.0},{date:"2026-07-04",units:1,price:249.0},{date:"2026-07-19",units:1,price:299.0},{date:"2026-07-23",units:1,price:299.0},{date:"2026-08-04",units:1,price:299.0},{date:"2026-08-06",units:1,price:299.0},{date:"2026-08-29",units:1,price:299.0}] },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", days:[{date:"2026-01-05",units:1,price:159.0},{date:"2026-01-14",units:2,price:159.0},{date:"2026-01-16",units:1,price:159.0},{date:"2026-02-01",units:1,price:159.0},{date:"2026-02-09",units:1,price:159.0},{date:"2026-02-14",units:1,price:159.0},{date:"2026-02-16",units:3,price:159.0},{date:"2026-02-24",units:1,price:159.0},{date:"2026-03-03",units:1,price:159.0},{date:"2026-03-09",units:1,price:159.0},{date:"2026-03-11",units:1,price:159.0},{date:"2026-03-12",units:1,price:143.1},{date:"2026-03-23",units:1,price:159.0},{date:"2026-03-25",units:1,price:159.0},{date:"2026-03-28",units:2,price:151.05},{date:"2026-04-02",units:1,price:0.0},{date:"2026-04-05",units:1,price:143.1},{date:"2026-04-06",units:1,price:143.1},{date:"2026-04-07",units:1,price:143.1},{date:"2026-04-10",units:2,price:159.0},{date:"2026-04-11",units:2,price:143.1},{date:"2026-04-12",units:3,price:143.1},{date:"2026-04-13",units:1,price:143.1},{date:"2026-04-16",units:3,price:143.1},{date:"2026-04-17",units:1,price:143.1},{date:"2026-04-20",units:2,price:71.55},{date:"2026-04-22",units:1,price:143.1},{date:"2026-04-24",units:1,price:143.1},{date:"2026-04-30",units:2,price:151.05},{date:"2026-05-03",units:1,price:143.1},{date:"2026-05-04",units:1,price:143.1},{date:"2026-05-05",units:1,price:143.1},{date:"2026-05-07",units:1,price:143.1},{date:"2026-05-08",units:2,price:143.1},{date:"2026-05-09",units:2,price:143.1},{date:"2026-05-11",units:2,price:143.1},{date:"2026-05-16",units:3,price:159.0},{date:"2026-05-17",units:1,price:159.0},{date:"2026-05-21",units:2,price:143.1},{date:"2026-05-26",units:1,price:143.0},{date:"2026-05-27",units:1,price:143.0},{date:"2026-05-28",units:1,price:143.0},{date:"2026-05-30",units:1,price:143.0},{date:"2026-05-31",units:1,price:143.1},{date:"2026-06-03",units:1,price:143.0},{date:"2026-06-04",units:1,price:143.0},{date:"2026-06-05",units:1,price:143.0},{date:"2026-06-06",units:3,price:153.67},{date:"2026-06-07",units:1,price:159.0},{date:"2026-06-09",units:2,price:159.0},{date:"2026-06-11",units:1,price:159.0},{date:"2026-06-12",units:2,price:143.1},{date:"2026-06-19",units:1,price:159.0},{date:"2026-06-20",units:1,price:159.0},{date:"2026-06-22",units:1,price:159.0},{date:"2026-06-25",units:1,price:159.0},{date:"2026-06-30",units:1,price:159.0},{date:"2026-07-02",units:1,price:159.0},{date:"2026-07-04",units:1,price:159.0},{date:"2026-07-06",units:1,price:159.0},{date:"2026-07-12",units:2,price:143.0},{date:"2026-07-16",units:1,price:143.0},{date:"2026-07-17",units:3,price:143.0},{date:"2026-07-19",units:1,price:143.0},{date:"2026-07-21",units:1,price:159.0},{date:"2026-07-24",units:1,price:159.0},{date:"2026-07-26",units:1,price:143.0},{date:"2026-08-03",units:1,price:0.0},{date:"2026-08-04",units:1,price:143.0},{date:"2026-08-05",units:1,price:143.0},{date:"2026-08-07",units:1,price:143.0},{date:"2026-08-09",units:1,price:159.0},{date:"2026-08-13",units:2,price:143.0},{date:"2026-08-14",units:1,price:143.0},{date:"2026-08-15",units:1,price:143.0},{date:"2026-08-17",units:1,price:143.0},{date:"2026-08-20",units:1,price:159.0},{date:"2026-08-21",units:2,price:151.0},{date:"2026-08-26",units:1,price:143.0},{date:"2026-08-29",units:2,price:143.0},{date:"2026-08-30",units:2,price:143.0},{date:"2026-09-01",units:2,price:151.0},{date:"2026-09-02",units:1,price:143.0},{date:"2026-09-03",units:1,price:143.0}] },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", days:[{date:"2026-01-06",units:1,price:599.0},{date:"2026-01-18",units:1,price:599.0},{date:"2026-01-19",units:1,price:599.0},{date:"2026-01-21",units:2,price:569.0},{date:"2026-01-22",units:1,price:599.0},{date:"2026-01-26",units:1,price:599.0},{date:"2026-02-06",units:1,price:539.0},{date:"2026-02-08",units:1,price:539.0},{date:"2026-02-11",units:1,price:599.0},{date:"2026-02-15",units:1,price:599.0},{date:"2026-04-13",units:1,price:539.0},{date:"2026-05-25",units:2,price:539.1},{date:"2026-05-30",units:1,price:539.1},{date:"2026-06-02",units:1,price:599.0},{date:"2026-06-08",units:1,price:539.0},{date:"2026-06-30",units:1,price:599.0},{date:"2026-07-08",units:1,price:599.0},{date:"2026-07-09",units:1,price:599.0},{date:"2026-07-12",units:1,price:539.09},{date:"2026-07-13",units:2,price:539.09},{date:"2026-08-02",units:1,price:539.0},{date:"2026-08-18",units:1,price:539.0},{date:"2026-08-25",units:1,price:539.0},{date:"2026-08-29",units:1,price:539.0},{date:"2026-08-31",units:1,price:539.0},{date:"2026-09-03",units:1,price:599.0}] },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", days:[{date:"2026-02-03",units:1,price:359.0},{date:"2026-04-20",units:1,price:323.1},{date:"2026-04-26",units:1,price:323.1},{date:"2026-04-27",units:1,price:323.1},{date:"2026-05-07",units:1,price:359.0},{date:"2026-05-08",units:1,price:359.0},{date:"2026-05-13",units:1,price:319.0},{date:"2026-05-19",units:1,price:319.0},{date:"2026-05-22",units:1,price:319.0},{date:"2026-05-24",units:1,price:359.0},{date:"2026-05-31",units:1,price:319.0},{date:"2026-06-01",units:1,price:319.0},{date:"2026-06-08",units:1,price:359.0},{date:"2026-06-09",units:1,price:359.0},{date:"2026-06-10",units:1,price:359.0},{date:"2026-06-12",units:1,price:359.0},{date:"2026-06-19",units:1,price:359.0},{date:"2026-06-30",units:1,price:359.0},{date:"2026-07-05",units:1,price:339.0},{date:"2026-07-10",units:1,price:339.0},{date:"2026-07-13",units:2,price:319.0},{date:"2026-07-20",units:1,price:319.0},{date:"2026-07-23",units:1,price:319.0},{date:"2026-08-05",units:1,price:319.0},{date:"2026-08-10",units:1,price:359.0},{date:"2026-08-14",units:1,price:319.0},{date:"2026-08-16",units:1,price:319.0},{date:"2026-08-20",units:1,price:319.0},{date:"2026-08-24",units:1,price:319.0},{date:"2026-08-25",units:1,price:359.0},{date:"2026-08-26",units:1,price:359.0},{date:"2026-08-27",units:1,price:319.0},{date:"2026-09-03",units:1,price:359.0}] },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", days:[{date:"2026-01-06",units:1,price:399.0},{date:"2026-01-19",units:1,price:399.0},{date:"2026-01-30",units:1,price:319.0},{date:"2026-02-08",units:2,price:319.0},{date:"2026-02-23",units:1,price:319.0},{date:"2026-02-28",units:1,price:399.0},{date:"2026-04-12",units:1,price:319.0},{date:"2026-05-05",units:1,price:399.0},{date:"2026-05-13",units:1,price:399.0},{date:"2026-06-07",units:1,price:399.0},{date:"2026-06-11",units:1,price:359.1},{date:"2026-06-26",units:1,price:399.0},{date:"2026-08-08",units:1,price:399.0}] },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", days:[{date:"2026-04-11",units:1,price:299.0},{date:"2026-04-14",units:1,price:299.0},{date:"2026-04-23",units:1,price:299.0},{date:"2026-05-04",units:1,price:299.0},{date:"2026-05-14",units:1,price:299.0},{date:"2026-05-22",units:1,price:299.0},{date:"2026-05-29",units:2,price:299.0},{date:"2026-06-07",units:1,price:299.0},{date:"2026-06-12",units:1,price:299.0},{date:"2026-06-13",units:1,price:299.0},{date:"2026-07-09",units:1,price:299.0},{date:"2026-07-20",units:1,price:299.0},{date:"2026-07-30",units:1,price:299.0},{date:"2026-08-10",units:1,price:269.1},{date:"2026-08-12",units:1,price:269.1}] },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", days:[{date:"2026-02-02",units:1,price:699.0},{date:"2026-02-09",units:1,price:699.0},{date:"2026-05-05",units:1,price:699.0},{date:"2026-07-07",units:1,price:699.0},{date:"2026-07-17",units:1,price:699.0}] },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", days:[{date:"2026-01-05",units:1,price:125.1},{date:"2026-01-10",units:1,price:125.1},{date:"2026-02-07",units:1,price:149.0},{date:"2026-03-01",units:1,price:125.09},{date:"2026-03-02",units:2,price:125.09},{date:"2026-03-06",units:1,price:125.09},{date:"2026-03-09",units:1,price:125.09},{date:"2026-03-13",units:1,price:149.0},{date:"2026-03-17",units:1,price:149.0},{date:"2026-03-29",units:1,price:125.09},{date:"2026-04-10",units:1,price:149.0},{date:"2026-04-16",units:1,price:149.0},{date:"2026-04-26",units:1,price:149.0},{date:"2026-05-01",units:1,price:149.0},{date:"2026-05-11",units:1,price:149.0},{date:"2026-05-12",units:1,price:149.0},{date:"2026-05-18",units:1,price:149.0},{date:"2026-05-21",units:1,price:149.0},{date:"2026-05-22",units:1,price:149.0},{date:"2026-07-09",units:1,price:149.0},{date:"2026-07-16",units:1,price:149.0}] },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", days:[{date:"2026-04-16",units:1,price:199.0},{date:"2026-05-11",units:1,price:199.0},{date:"2026-05-14",units:1,price:199.0},{date:"2026-06-12",units:1,price:199.0},{date:"2026-07-11",units:1,price:199.0},{date:"2026-07-13",units:1,price:179.0},{date:"2026-07-14",units:1,price:179.0}] },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", days:[{date:"2026-01-31",units:1,price:199.0},{date:"2026-03-18",units:1,price:199.0},{date:"2026-04-09",units:1,price:199.0},{date:"2026-04-14",units:1,price:199.0},{date:"2026-06-06",units:1,price:199.0},{date:"2026-06-11",units:1,price:199.0}] },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", days:[{date:"2026-02-26",units:1,price:79.0},{date:"2026-07-31",units:1,price:79.0}] },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", days:[{date:"2026-04-22",units:1,price:99.0}] },
+  ];
+
+  const skuAnalysisSelect = document.getElementById("skuAnalysisSelect");
+  dailySalesData.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s.sku;
+    opt.textContent = s.name;
+    skuAnalysisSelect.appendChild(opt);
+  });
+
+  function renderSkuAnalysis(sku) {
+    const tbody = document.getElementById("skuAnalysisTableBody");
+    const summaryEl = document.getElementById("skuAnalysisSummary");
+    tbody.innerHTML = "";
+    const entry = dailySalesData.find(s => s.sku === sku);
+    if (!entry || !entry.days.length) {
+      summaryEl.textContent = "No sales recorded for this SKU.";
+      return;
+    }
+    const days = entry.days.slice().sort((a, b) => b.date.localeCompare(a.date));
+    const totalUnits = days.reduce((s, d) => s + d.units, 0);
+    const totalRevenue = days.reduce((s, d) => s + d.units * d.price, 0);
+    const avgPrice = totalUnits ? totalRevenue / totalUnits : 0;
+    const firstDate = days[days.length - 1].date;
+    const lastDate = days[0].date;
+    summaryEl.textContent = `${totalUnits} units across ${days.length} day${days.length===1?"":"s"} with sales, ${firstDate} to ${lastDate} · weighted avg price AED ${avgPrice.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}`;
+    days.forEach(d => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${d.date}</td><td>${d.units}</td><td class="ytd">${d.price.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  skuAnalysisSelect.addEventListener("change", () => renderSkuAnalysis(skuAnalysisSelect.value));
+  if (dailySalesData.length) {
+    skuAnalysisSelect.value = dailySalesData[0].sku;
+    renderSkuAnalysis(dailySalesData[0].sku);
+  }
 
   const wfMax = 87268.31;
 const steps = [
