@@ -1092,7 +1092,8 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     const avgPrice = totalUnits ? totalRevenue / totalUnits : 0;
     const firstDate = days[days.length - 1].date;
     const lastDate = days[0].date;
-    summaryEl.textContent = `${totalUnits} units across ${days.length} day${days.length===1?"":"s"} with sales, ${firstDate} to ${lastDate} · weighted avg price AED ${avgPrice.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}`;
+    const currentAsp = days[0].price;
+    summaryEl.innerHTML = `${totalUnits} units across ${days.length} day${days.length===1?"":"s"} with sales, ${firstDate} to ${lastDate} · weighted avg price AED ${avgPrice.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})} · <b>current ASP AED ${currentAsp.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</b> (${lastDate})`;
     days.forEach(d => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${d.date}</td><td>${d.units}</td><td class="ytd">${d.price.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
