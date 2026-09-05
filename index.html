@@ -248,11 +248,18 @@
   }
   .sku-analysis-summary { font-size: 12.5px; color: var(--ink-muted); }
   .sku-chart { display: flex; flex-direction: column; gap: 7px; padding-top: 4px; }
-  .sku-price-row { display: grid; grid-template-columns: 72px 1fr 90px; align-items: center; gap: 10px; font-size: 12.5px; }
+  .sku-price-row, .sku-price-header {
+    display: grid; grid-template-columns: 72px 1fr 74px 60px 78px;
+    align-items: center; gap: 10px; font-size: 12.5px;
+  }
+  .sku-price-header { font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-muted); font-weight: 700; padding-bottom: 2px; }
+  .sku-price-header span { text-align: right; }
   .sku-price-row .price-label { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
   .sku-price-row .bar-track { position: relative; height: 20px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
   .sku-price-row .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--series-1); border-radius: 4px; transition: width .15s ease; }
-  .sku-price-row .units-label { font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+  .sku-price-row .units-label, .sku-price-row .days-label, .sku-price-row .perday-label {
+    text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap;
+  }
   .sku-price-row .units-label b { color: var(--ink); }
 
   /* ---------- fee table (month-wise) ---------- */
@@ -1039,11 +1046,22 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     const byPrice = new Map();
     days.forEach(d => {
       const key = Math.round(d.price);
-      byPrice.set(key, (byPrice.get(key) || 0) + d.units);
+      const cur = byPrice.get(key) || { units: 0, dayCount: 0 };
+      cur.units += d.units;
+      cur.dayCount += 1;
+      byPrice.set(key, cur);
     });
-    const rows = [...byPrice.entries()].map(([price, units]) => ({ price, units }));
+    const rows = [...byPrice.entries()].map(([price, v]) => ({
+      price, units: v.units, dayCount: v.dayCount, perDay: v.units / v.dayCount,
+    }));
     rows.sort((a, b) => b.units - a.units);
     const maxUnits = Math.max(...rows.map(r => r.units));
+
+    const header = document.createElement("div");
+    header.className = "sku-price-header";
+    header.innerHTML = `<span></span><span></span><span>Units</span><span>Days</span><span>Units/day</span>`;
+    chartEl.appendChild(header);
+
     rows.forEach(r => {
       const row = document.createElement("div");
       row.className = "sku-price-row";
@@ -1051,7 +1069,9 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       row.innerHTML =
         `<span class="price-label">AED ${r.price.toLocaleString()}</span>` +
         `<span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>` +
-        `<span class="units-label"><b>${r.units}</b> unit${r.units===1?"":"s"}</span>`;
+        `<span class="units-label"><b>${r.units}</b> unit${r.units===1?"":"s"}</span>` +
+        `<span class="days-label">${r.dayCount} day${r.dayCount===1?"":"s"}</span>` +
+        `<span class="perday-label">${r.perDay.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}/day</span>`;
       chartEl.appendChild(row);
     });
   }
