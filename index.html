@@ -247,19 +247,13 @@
     border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer;
   }
   .sku-analysis-summary { font-size: 12.5px; color: var(--ink-muted); }
-  .sku-chart { position: relative; height: 280px; margin: 8px 30px 28px 46px; }
-  .sku-chart-grid { position: absolute; inset: 0; }
-  .sku-chart-gridline { position: absolute; left: 0; right: 0; height: 1px; background: var(--grid); }
-  .sku-chart-gridline-label { position: absolute; left: -46px; width: 40px; text-align: right; font-size: 10.5px; color: var(--ink-muted); transform: translateY(-50%); font-variant-numeric: tabular-nums; }
-  .sku-chart-xlabel { position: absolute; top: 100%; margin-top: 8px; font-size: 10.5px; color: var(--ink-muted); transform: translateX(-50%); white-space: nowrap; }
-  .sku-bubble {
-    position: absolute; border-radius: 50%; background: var(--series-1); opacity: 0.55;
-    border: 1px solid var(--series-1); transform: translate(-50%, 50%); cursor: default;
-    transition: opacity .12s ease;
-  }
-  .sku-bubble:hover { opacity: 0.85; z-index: 2; }
-  .sku-bubble .tooltip { bottom: calc(100% + 6px); }
-  .sku-bubble:hover .tooltip { opacity: 1; }
+  .sku-chart { display: flex; flex-direction: column; gap: 7px; padding-top: 4px; }
+  .sku-price-row { display: grid; grid-template-columns: 72px 1fr 90px; align-items: center; gap: 10px; font-size: 12.5px; }
+  .sku-price-row .price-label { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .sku-price-row .bar-track { position: relative; height: 20px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .sku-price-row .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--series-1); border-radius: 4px; transition: width .15s ease; }
+  .sku-price-row .units-label { font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+  .sku-price-row .units-label b { color: var(--ink); }
 
   /* ---------- fee table (month-wise) ---------- */
   table.fee-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
@@ -630,7 +624,7 @@
     <section class="card">
       <div class="section-head">
         <span class="section-title">SKU Analysis</span>
-        <span class="section-note">Units sold and price point by date, from Finances API settlement events. One row per calendar day that SKU had at least one unit sale - days with no sale are simply absent, not zero rows.</span>
+        <span class="section-note">Units sold at each price point, YTD, from Finances API settlement events. Sorted by volume - the price that moved the most units is at top. Daily detail is in the table below.</span>
       </div>
       <div class="sku-analysis-controls">
         <label for="skuAnalysisSelect">SKU:</label>
@@ -1030,70 +1024,35 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   });
 
   function renderSkuChart(days) {
-    // Bubble chart: X = date, Y = price, bubble AREA (not radius) proportional to
-    // units - area-proportional (via sqrt) is the correct way to visually weight a
-    // quantity, since radius-proportional would make high-qty days look even more
-    // dominant than their actual share (a common charting mistake).
+    // Price-vs-volume view (date dropped per user feedback 2026-09-05 - a date-based
+    // bubble chart buried the actual pattern under overlapping same-price days and let
+    // rare outlier prices compress the scale). Groups every day's sale into its price
+    // point (rounded to the nearest whole AED - sub-AED differences are float noise
+    // from fee/discount allocation, not meaningfully different prices), sums units
+    // sold at that price across the WHOLE period, and shows one horizontal bar per
+    // price sorted by units descending - the price that moved the most volume is
+    // immediately obvious at the top, which is the actual point of "weight toward
+    // price with higher qty".
     const chartEl = document.getElementById("skuAnalysisChart");
     chartEl.innerHTML = "";
     if (!days.length) return;
-    const toTime = ds => new Date(ds + "T00:00:00Z").getTime();
-    const times = days.map(d => toTime(d.date));
-    const prices = days.map(d => d.price);
-    const units = days.map(d => d.units);
-    const minDate = Math.min(...times), maxDate = Math.max(...times);
-    const dateSpan = Math.max(1, maxDate - minDate);
-    const minPrice = Math.min(...prices), maxPrice = Math.max(...prices);
-    const pad = (maxPrice - minPrice) * 0.15 || Math.max(5, maxPrice * 0.1);
-    const yMin = Math.max(0, minPrice - pad), yMax = maxPrice + pad;
-    const ySpan = Math.max(1, yMax - yMin);
-    const maxUnits = Math.max(...units);
-    const minR = 5, maxR = 22;
-    const radiusFor = u => maxUnits > 0 ? minR + (maxR - minR) * Math.sqrt(u / maxUnits) : minR;
-
-    const gridEl = document.createElement("div");
-    gridEl.className = "sku-chart-grid";
-    [yMin, (yMin + yMax) / 2, yMax].forEach(v => {
-      const frac = (v - yMin) / ySpan;
-      const line = document.createElement("div");
-      line.className = "sku-chart-gridline";
-      line.style.bottom = (frac * 100) + "%";
-      gridEl.appendChild(line);
-      const label = document.createElement("span");
-      label.className = "sku-chart-gridline-label";
-      label.style.bottom = (frac * 100) + "%";
-      label.textContent = v.toLocaleString(undefined, { maximumFractionDigits: 0 });
-      gridEl.appendChild(label);
-    });
-    chartEl.appendChild(gridEl);
-
-    const tickCount = Math.min(6, days.length - 1) || 1;
-    for (let i = 0; i <= tickCount; i++) {
-      const t = minDate + (dateSpan * i / tickCount);
-      const label = document.createElement("span");
-      label.className = "sku-chart-xlabel";
-      label.style.left = ((i / tickCount) * 100) + "%";
-      label.textContent = new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      chartEl.appendChild(label);
-    }
-
+    const byPrice = new Map();
     days.forEach(d => {
-      const xFrac = (toTime(d.date) - minDate) / dateSpan;
-      const yFrac = (d.price - yMin) / ySpan;
-      const r = radiusFor(d.units);
-      const bubble = document.createElement("div");
-      bubble.className = "sku-bubble";
-      bubble.style.left = (xFrac * 100) + "%";
-      bubble.style.bottom = (yFrac * 100) + "%";
-      bubble.style.width = (r * 2) + "px";
-      bubble.style.height = (r * 2) + "px";
-      const tip = document.createElement("div");
-      tip.className = "tooltip";
-      tip.innerHTML = `<div class="t-row"><span>${d.date}</span></div>` +
-        `<div class="t-row"><span>Units</span><b>&nbsp;${d.units}</b></div>` +
-        `<div class="t-row"><span>Price</span><b>&nbsp;AED ${d.price.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</b></div>`;
-      bubble.appendChild(tip);
-      chartEl.appendChild(bubble);
+      const key = Math.round(d.price);
+      byPrice.set(key, (byPrice.get(key) || 0) + d.units);
+    });
+    const rows = [...byPrice.entries()].map(([price, units]) => ({ price, units }));
+    rows.sort((a, b) => b.units - a.units);
+    const maxUnits = Math.max(...rows.map(r => r.units));
+    rows.forEach(r => {
+      const row = document.createElement("div");
+      row.className = "sku-price-row";
+      const pct = maxUnits ? (r.units / maxUnits * 100) : 0;
+      row.innerHTML =
+        `<span class="price-label">AED ${r.price.toLocaleString()}</span>` +
+        `<span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>` +
+        `<span class="units-label"><b>${r.units}</b> unit${r.units===1?"":"s"}</span>`;
+      chartEl.appendChild(row);
     });
   }
 
@@ -1113,13 +1072,13 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     const avgPrice = totalUnits ? totalRevenue / totalUnits : 0;
     const firstDate = days[days.length - 1].date;
     const lastDate = days[0].date;
-    summaryEl.textContent = `${totalUnits} units across ${days.length} day${days.length===1?"":"s"} with sales, ${firstDate} to ${lastDate} · weighted avg price AED ${avgPrice.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})} · bubble size = units that day`;
+    summaryEl.textContent = `${totalUnits} units across ${days.length} day${days.length===1?"":"s"} with sales, ${firstDate} to ${lastDate} · weighted avg price AED ${avgPrice.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}`;
     days.forEach(d => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${d.date}</td><td>${d.units}</td><td class="ytd">${d.price.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
       tbody.appendChild(tr);
     });
-    renderSkuChart(days.slice().sort((a, b) => a.date.localeCompare(b.date)));
+    renderSkuChart(days);
   }
 
   skuAnalysisSelect.addEventListener("change", () => renderSkuAnalysis(skuAnalysisSelect.value));
