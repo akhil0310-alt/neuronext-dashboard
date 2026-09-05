@@ -94,11 +94,9 @@
     border-radius: 100px; padding: 6px 12px; cursor: pointer; transition: background .12s ease;
   }
   .refresh-btn:hover { background: var(--series-1); color: #fff; }
-  .refresh-btn.copied { background: var(--good); color: #fff; }
   .refresh-btn.triggered { background: var(--good); color: #fff; }
   .refresh-btn.failed { background: var(--critical-soft); color: var(--critical); }
   .refresh-btn:disabled { opacity: 0.6; cursor: default; }
-  .refresh-btn-row { display: flex; gap: 8px; }
   .refresh-icon { display: inline-block; font-size: 13px; }
 
   /* ---------- section labels ---------- */
@@ -344,16 +342,11 @@
     <div class="conn-block">
       <div class="conn">
         <span class="dot"></span>
-        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>5 Sep 2026</b></span>
+        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>5 Sep 2026, 15:56 GST</b></span>
       </div>
-      <div class="refresh-btn-row">
-        <button class="refresh-btn" id="refreshNowBtn" type="button">
-          <span class="refresh-icon">⟳</span> Refresh now
-        </button>
-        <button class="refresh-btn" id="refreshBtn" type="button">
-          <span class="refresh-icon">⟳</span> Copy refresh request
-        </button>
-      </div>
+      <button class="refresh-btn" id="refreshNowBtn" type="button">
+        <span class="refresh-icon">⟳</span> Refresh now
+      </button>
     </div>
   </header>
 
@@ -1042,39 +1035,6 @@ const steps = [
         refreshNowBtn.innerHTML = '<span class="refresh-icon">⟳</span> Refresh now';
         refreshNowBtn.disabled = false;
       }, 4000);
-    }
-  });
-
-  // ---------- REFRESH REQUEST (copy-to-clipboard, since this page cannot
-  // itself contact Amazon or Claude - see the header button for why) ----------
-  const refreshBtn = document.getElementById("refreshBtn");
-  const refreshText = "Refresh the NeuroNext Amazon dashboard now (run dashboard_refresh_data.py, rebuild the HTML, and republish to the existing artifact URL).";
-  refreshBtn.addEventListener("click", async () => {
-    let ok = false;
-    try {
-      await navigator.clipboard.writeText(refreshText);
-      ok = true;
-    } catch (e) {
-      try {
-        const ta = document.createElement("textarea");
-        ta.value = refreshText;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-      } catch (e2) { ok = false; }
-    }
-    if (ok) {
-      refreshBtn.classList.add("copied");
-      refreshBtn.innerHTML = '<span class="refresh-icon">✓</span> Copied — paste into chat';
-      setTimeout(() => {
-        refreshBtn.classList.remove("copied");
-        refreshBtn.innerHTML = '<span class="refresh-icon">⟳</span> Copy refresh request';
-      }, 2500);
-    } else {
-      window.prompt("Copy this and send it to Claude:", refreshText);
     }
   });
 </script>
