@@ -1,8 +1,17 @@
-name: Test dispatch 2
+name: Test dispatch 3
 on:
   schedule:
+    # 03:04 UTC = 07:04 Asia/Dubai (matches the local scheduled task's fire time)
     - cron: "4 3 * * *"
   workflow_dispatch: {}
+
+concurrency:
+  group: dashboard-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
 jobs:
   noop:
     runs-on: ubuntu-latest
