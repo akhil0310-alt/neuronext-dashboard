@@ -1,4 +1,4 @@
-name: Test dispatch 5
+name: Test dispatch 6
 on:
   workflow_dispatch: {}
 jobs:
@@ -6,4 +6,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install dependencies
-        run: pip install --only-binary=:all: gspread google-auth
+        run: "pip install --only-binary=:all: gspread google-auth"
