@@ -1,5 +1,4 @@
 name: Refresh dashboard
-
 on:
   schedule:
     # 03:04 UTC = 07:04 Asia/Dubai (matches the local scheduled task's fire time)
