@@ -1,5 +1,7 @@
-name: Test dispatch
+name: Test dispatch 2
 on:
+  schedule:
+    - cron: "4 3 * * *"
   workflow_dispatch: {}
 jobs:
   noop:
