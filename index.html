@@ -88,17 +88,6 @@
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); flex: none; }
   .conn b { color: var(--ink); font-weight: 600; }
   .conn-block { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .refresh-btn {
-    display: flex; align-items: center; gap: 6px; font: inherit; font-size: 11.5px; font-weight: 600;
-    color: var(--series-1); background: var(--series-1-soft); border: 1px solid transparent;
-    border-radius: 100px; padding: 6px 12px; cursor: pointer; transition: background .12s ease;
-  }
-  .refresh-btn:hover { background: var(--series-1); color: #fff; }
-  .refresh-btn.triggered { background: var(--good); color: #fff; }
-  .refresh-btn.failed { background: var(--critical-soft); color: var(--critical); }
-  .refresh-btn:disabled { opacity: 0.6; cursor: default; }
-  .refresh-icon { display: inline-block; font-size: 13px; }
-
   /* ---------- section labels ---------- */
   .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.005em; }
@@ -344,9 +333,6 @@
         <span class="dot"></span>
         <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>5 Sep 2026, 15:56 GST</b></span>
       </div>
-      <button class="refresh-btn" id="refreshNowBtn" type="button">
-        <span class="refresh-icon">⟳</span> Refresh now
-      </button>
     </div>
   </header>
 
@@ -993,48 +979,4 @@ const steps = [
     wfEl.appendChild(col);
   });
 
-  // ---------- REFRESH NOW (triggers the GitHub Actions pipeline directly) ----------
-  // The token below is scoped to ONLY "Actions: Read and write" on this one repo -
-  // it cannot read/write any file content, so the worst a page-source leak enables
-  // is someone else also triggering a refresh, not touching anything else here.
-  const REFRESH_DISPATCH_TOKEN = "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";
-  const refreshNowBtn = document.getElementById("refreshNowBtn");
-  let refreshNowCooldown = false;
-  refreshNowBtn.addEventListener("click", async () => {
-    if (refreshNowCooldown) return;
-    refreshNowBtn.disabled = true;
-    refreshNowBtn.innerHTML = '<span class="refresh-icon">⟳</span> Triggering...';
-    try {
-      const resp = await fetch("https://api.github.com/repos/akhil0310-alt/neuronext-dashboard/actions/workflows/dashboard-refresh.yml/dispatches", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + REFRESH_DISPATCH_TOKEN,
-          "Accept": "application/vnd.github+json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ ref: "main" })
-      });
-      if (resp.status === 204) {
-        refreshNowBtn.classList.add("triggered");
-        refreshNowBtn.innerHTML = '<span class="refresh-icon">✓</span> Triggered — ready in ~2 min';
-        refreshNowCooldown = true;
-        setTimeout(() => {
-          refreshNowBtn.classList.remove("triggered");
-          refreshNowBtn.innerHTML = '<span class="refresh-icon">⟳</span> Refresh now';
-          refreshNowBtn.disabled = false;
-          refreshNowCooldown = false;
-        }, 30000);
-      } else {
-        throw new Error("status " + resp.status);
-      }
-    } catch (e) {
-      refreshNowBtn.classList.add("failed");
-      refreshNowBtn.innerHTML = '<span class="refresh-icon">✗</span> Failed to trigger';
-      setTimeout(() => {
-        refreshNowBtn.classList.remove("failed");
-        refreshNowBtn.innerHTML = '<span class="refresh-icon">⟳</span> Refresh now';
-        refreshNowBtn.disabled = false;
-      }, 4000);
-    }
-  });
 </script>
