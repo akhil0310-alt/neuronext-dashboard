@@ -1,70 +1,9 @@
-name: Test dispatch 4
+name: Test dispatch 5
 on:
-  schedule:
-    # 03:04 UTC = 07:04 Asia/Dubai (matches the local scheduled task's fire time)
-    - cron: "4 3 * * *"
   workflow_dispatch: {}
-
-concurrency:
-  group: dashboard-refresh
-  cancel-in-progress: false
-
-permissions:
-  contents: write
-
 jobs:
-  refresh:
+  noop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       - name: Install dependencies
         run: pip install --only-binary=:all: gspread google-auth
-
-      - name: Write credential files from secrets
-        run: |
-          printf '%s' "$AMAZON_APP_JSON" > "$RUNNER_TEMP/amazon_app.json"
-          printf '%s' "$GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/google_sheets_service_account.json"
-        env:
-          AMAZON_APP_JSON: ${{ secrets.AMAZON_APP_JSON }}
-          GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON }}
-
-      - name: Pull fresh Amazon + warehouse data
-        working-directory: scripts
-        run: python dashboard_refresh_data.py
-        env:
-          AMZ_CRED_PATH: ${{ runner.temp }}/amazon_app.json
-          GSHEET_CRED_PATH: ${{ runner.temp }}/google_sheets_service_account.json
-          DASHBOARD_DATA_OUT: dashboard_data.json
-
-      - name: Regenerate HTML fragments
-        working-directory: scripts
-        run: |
-          python gen_dashboard_pieces.py
-          python gen_dashboard_html.py
-
-      - name: Splice fragments into index.html and validate
-        run: python scripts/splice_and_validate.py
-        env:
-          DASHBOARD_HTML_PATH: index.html
-
-      - name: Remove credential files
-        if: always()
-        run: |
-          rm -f "$RUNNER_TEMP/amazon_app.json" "$RUNNER_TEMP/google_sheets_service_account.json"
-
-      - name: Commit and push if changed
-        run: |
-          git config user.name "neuronext-dashboard-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add index.html
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Automated refresh: $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
-          fi
