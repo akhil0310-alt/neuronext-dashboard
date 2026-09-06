@@ -567,13 +567,13 @@
   <section class="card">
     <div class="section-head">
       <span class="section-title">Returns: sellable vs. non-sellable</span>
-      <span class="section-note">From the FBA Customer Returns report. Sellable returns get their COGS reversed above (the unit goes back to stock, so it was never actually consumed) — non-sellable (defective/customer-damaged) keep COGS charged, same as any refund with no return.</span>
+      <span class="section-note">From the FBA Customer Returns report. Sellable returns get their COGS reversed above (the unit goes back to stock, so it was never actually consumed) — Customer Damaged and Defective keep COGS charged, same as any refund with no return. Neither Customer Damaged nor Defective means Amazon is at fault — Defective is a product/manufacturing issue, not warehouse mishandling. This account's returns haven't shown a Carrier/Warehouse-Damaged disposition (Amazon's own fault, and reimbursable) so far this year; if one appears it lands in "Other" below rather than being folded into Customer Damaged. Genuine Amazon-caused warehouse loss/damage is tracked separately via FBA Reimbursements, not this report.</span>
     </div>
     <div class="overflow-x">
       <table class="inv-table">
         <thead>
           <tr>
-            <th>SKU</th><th>Sellable</th><th>Non-sellable</th>
+            <th>SKU</th><th>Sellable</th><th>Customer Damaged</th><th>Defective</th><th>Other</th>
             <th class="ytd">Total returns</th><th>COGS reversed (AED)</th>
           </tr>
         </thead>
@@ -1111,14 +1111,14 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
 
   // ---------- RETURNS BREAKDOWN ----------
   const returnsData = [
-    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", sellable:1, non_sellable:13, total_returns:14, cogs_reversed:97.69 },
-    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", sellable:9, non_sellable:6, total_returns:15, cogs_reversed:861.82 },
-    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", sellable:2, non_sellable:2, total_returns:4, cogs_reversed:390.49 },
-    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", sellable:2, non_sellable:0, total_returns:2, cogs_reversed:293.02 },
-    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", sellable:0, non_sellable:2, total_returns:2, cogs_reversed:0.0 },
-    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", sellable:1, non_sellable:2, total_returns:3, cogs_reversed:130.95 },
-    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", sellable:1, non_sellable:4, total_returns:5, cogs_reversed:68.69 },
-    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", sellable:0, non_sellable:1, total_returns:1, cogs_reversed:0.0 },
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", sellable:1, customer_damaged:8, defective:5, other_non_sellable:0, non_sellable:13, total_returns:14, cogs_reversed:97.69 },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", sellable:9, customer_damaged:1, defective:5, other_non_sellable:0, non_sellable:6, total_returns:15, cogs_reversed:861.82 },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", sellable:2, customer_damaged:1, defective:1, other_non_sellable:0, non_sellable:2, total_returns:4, cogs_reversed:390.49 },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", sellable:2, customer_damaged:0, defective:0, other_non_sellable:0, non_sellable:0, total_returns:2, cogs_reversed:293.02 },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", sellable:0, customer_damaged:1, defective:1, other_non_sellable:0, non_sellable:2, total_returns:2, cogs_reversed:0.0 },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", sellable:1, customer_damaged:1, defective:1, other_non_sellable:0, non_sellable:2, total_returns:3, cogs_reversed:130.95 },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", sellable:1, customer_damaged:2, defective:2, other_non_sellable:0, non_sellable:4, total_returns:5, cogs_reversed:68.69 },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", sellable:0, customer_damaged:1, defective:0, other_non_sellable:0, non_sellable:1, total_returns:1, cogs_reversed:0.0 },
   ];
 
   const returnsTableEl = document.getElementById("returnsTableBody");
@@ -1126,7 +1126,9 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     const tr = document.createElement("tr");
     tr.innerHTML = `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
       `<td>${r.sellable}</td>` +
-      `<td>${r.non_sellable}</td>` +
+      `<td>${r.customer_damaged}</td>` +
+      `<td>${r.defective}</td>` +
+      `<td>${r.other_non_sellable}</td>` +
       `<td class="ytd">${r.total_returns}</td>` +
       `<td>${r.cogs_reversed === null ? "—" : r.cogs_reversed.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     returnsTableEl.appendChild(tr);
