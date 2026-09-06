@@ -656,9 +656,9 @@
         <select id="costLedgerSelect"></select>
       </div>
       <div class="overflow-x">
-        <table class="fee-table" style="min-width:760px">
+        <table class="fee-table" style="min-width:1100px">
           <thead>
-            <tr><th>Date</th><th>Qty</th><th>Landed cost/unit (AED)</th><th>Running qty</th><th class="ytd">Running WAC (AED)</th><th>Note</th></tr>
+            <tr><th>Date</th><th>Qty</th><th>Landed cost/unit (AED)</th><th>Running qty</th><th class="ytd">Running WAC (AED)</th><th>Calculation</th><th>Note</th></tr>
           </thead>
           <tbody id="costLedgerDetailBody"></tbody>
         </table>
@@ -1018,15 +1018,29 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     tbody.innerHTML = "";
     const entry = costLedgerData.find(r => r.sku === sku);
     if (!entry) return;
+    let prevQty = 0, prevWac = null;
     entry.batches.forEach(b => {
       const tr = document.createElement("tr");
+      // Shows the actual weighted-average arithmetic behind this row's Running WAC -
+      // (prior running qty x prior running WAC + this batch's qty x its own cost)
+      // divided by the new running qty. First batch has nothing to blend against, so
+      // its WAC is just its own cost.
+      let calc;
+      if (prevWac == null) {
+        calc = `Opening balance — WAC = ${b.landed_cost_aed.toFixed(2)}`;
+      } else {
+        calc = `(${prevQty.toLocaleString()} × ${prevWac.toFixed(2)} + ${b.qty.toLocaleString()} × ${b.landed_cost_aed.toFixed(2)}) ÷ ${b.running_qty.toLocaleString()} = ${b.running_wac_aed.toFixed(2)}`;
+      }
       tr.innerHTML = `<td>${b.date}</td>` +
         `<td>${b.qty.toLocaleString()}</td>` +
         `<td>${b.landed_cost_aed.toFixed(2)}</td>` +
         `<td>${b.running_qty.toLocaleString()}</td>` +
         `<td class="ytd">${b.running_wac_aed == null ? "—" : b.running_wac_aed.toFixed(2)}</td>` +
+        `<td class="note-cell">${calc}</td>` +
         `<td class="note-cell">${b.note || "Opening balance (existing landed cost)"}</td>`;
       tbody.appendChild(tr);
+      prevQty = b.running_qty;
+      prevWac = b.running_wac_aed;
     });
   }
   clSelect.addEventListener("change", () => renderCostLedgerDetail(clSelect.value));
