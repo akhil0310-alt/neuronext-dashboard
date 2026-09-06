@@ -635,6 +635,7 @@
           <thead>
             <tr>
               <th>SKU</th><th>AZ Inv</th><th>WH Inv</th><th class="ytd">Total Inv</th>
+              <th>Product Cost (USD)</th><th>Landed Cost (USD)</th><th>Landed Cost (AED)</th>
               <th class="ytd">Inventory Value</th>
               <th>Units sold YTD</th><th>Avg daily sales</th>
               <th>Reorder point (90d)</th><th>Days of cover</th>
@@ -1117,6 +1118,9 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       `<td>${r.az_inv.toLocaleString()}</td>` +
       whCell +
       `<td class="ytd">${r.total_inv.toLocaleString()}</td>` +
+      `<td>${costRow && costRow.product_cost_usd != null ? "$" + costRow.product_cost_usd.toFixed(1) : "—"}</td>` +
+      `<td>${costRow && costRow.landed_cost_usd != null ? "$" + costRow.landed_cost_usd.toFixed(1) : "—"}</td>` +
+      `<td>${costRow && costRow.landed_cost != null ? costRow.landed_cost.toFixed(1) : "—"}</td>` +
       `<td class="ytd">${invValue === null ? "—" : Math.round(invValue).toLocaleString()}</td>` +
       `<td>${r.units_sold_ytd}</td>` +
       `<td>${r.avg_daily_sales.toFixed(3)}</td>` +
@@ -1135,6 +1139,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       `<td>${sum("az_inv").toLocaleString()}</td>` +
       `<td>${sum("wh_inv").toLocaleString()}</td>` +
       `<td class="ytd">${sum("total_inv").toLocaleString()}</td>` +
+      `<td></td><td></td><td></td>` +
       `<td class="ytd">${Math.round(totalInvValue).toLocaleString()}</td>` +
       `<td>${sum("units_sold_ytd").toLocaleString()}</td>` +
       `<td></td><td></td><td></td>` +
