@@ -307,6 +307,7 @@
   .mom-swatch { width: 10px; height: 10px; border-radius: 3px; }
 
   .overflow-x { overflow-x: auto; }
+  table.fee-table td.note-cell { text-align: left; white-space: normal; color: var(--ink-muted); font-size: 11px; max-width: 360px; }
 
   /* ---------- details/table-view fallback ---------- */
   details.table-view { font-size: 12.5px; }
@@ -354,7 +355,7 @@
     <div class="conn-block">
       <div class="conn">
         <span class="dot"></span>
-        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>6 Sep 2026, 11:17 GST</b></span>
+        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>6 Sep 2026, 14:58 GST</b></span>
       </div>
     </div>
   </header>
@@ -362,6 +363,7 @@
   <nav class="tab-nav">
     <button class="tab-nav-btn active" id="tabBtnPnl" type="button">PNL</button>
     <button class="tab-nav-btn" id="tabBtnInventory" type="button">Inventory</button>
+    <button class="tab-nav-btn" id="tabBtnCostLedger" type="button">Inventory Costing</button>
     <button class="tab-nav-btn" id="tabBtnSkuAnalysis" type="button">SKU Analysis</button>
     <button class="tab-nav-btn" id="tabBtnAds" type="button">Ads</button>
   </nav>
@@ -499,7 +501,7 @@
   <section class="card">
     <div class="section-head">
       <span class="section-title">Cost per unit &amp; recommended ASP</span>
-      <span class="section-note">Product cost, freight, duty and VAT are all built up in USD (the original supplier invoice currency) — only the final landed cost is converted to AED, at the fixed peg. ASPs are AED (Amazon.ae selling prices). Actual ASP is green if it clears a 60% gross margin, red if it doesn't. Every SKU here has a sourced cost breakdown (real NEXTWAVE invoices) — no estimates.</span>
+      <span class="section-note">Product cost, freight, duty and VAT are all built up in USD (the original supplier invoice currency) — only the final landed cost is converted to AED, at the fixed peg. ASPs are AED (Amazon.ae selling prices). Actual ASP is green if it clears a 60% gross margin, red if it doesn't. Every SKU here has a sourced cost breakdown (real NEXTWAVE invoices) — no estimates. Landed cost/unit (AED) marked <span style="color:var(--series-2)">●</span> reflects a revised running weighted-average cost — see the Inventory Costing tab for the batch history behind it (Product/Freight/Duty/VAT columns to its left stay the original per-formula reference, not decomposed for the blend).</span>
     </div>
     <div class="overflow-x">
       <table class="fee-table" style="min-width:1080px">
@@ -628,6 +630,42 @@
     </section>
   </div>
 
+  <!-- INVENTORY COSTING TAB -->
+  <div class="tab-panel" id="tabCostLedger">
+    <section class="card">
+      <div class="section-head">
+        <span class="section-title">Running weighted-average cost</span>
+        <span class="section-note">Current WAC per SKU across every dated cost batch (an opening balance at each SKU's existing landed cost, plus any new shipments such as the UK batch received 04-Sep-2026). Sold-unit COGS uses this WAC from each batch's date forward - sales before a batch keep the prior rate. "Days since" is ageing by last batch received, not per-unit lot age.</span>
+      </div>
+      <div class="overflow-x">
+        <table class="inv-table">
+          <thead>
+            <tr><th>SKU</th><th class="ytd">Current WAC (AED)</th><th>Last batch</th><th>Days since</th><th>Total qty</th></tr>
+          </thead>
+          <tbody id="costLedgerSummaryBody"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="section-head">
+        <span class="section-title">Batch detail by SKU</span>
+        <span class="section-note">Every batch behind that SKU's running WAC, oldest first, with the WAC after each one.</span>
+      </div>
+      <div class="sku-analysis-controls">
+        <label for="costLedgerSelect">SKU:</label>
+        <select id="costLedgerSelect"></select>
+      </div>
+      <div class="overflow-x">
+        <table class="fee-table" style="min-width:760px">
+          <thead>
+            <tr><th>Date</th><th>Qty</th><th>Landed cost/unit (AED)</th><th>Running qty</th><th class="ytd">Running WAC (AED)</th><th>Note</th></tr>
+          </thead>
+          <tbody id="costLedgerDetailBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
   <!-- SKU ANALYSIS TAB -->
   <div class="tab-panel" id="tabSkuAnalysis">
     <section class="card">
@@ -676,6 +714,7 @@
   const tabs = [
     { btn: "tabBtnPnl", panel: "tabPnl" },
     { btn: "tabBtnInventory", panel: "tabInventory" },
+    { btn: "tabBtnCostLedger", panel: "tabCostLedger" },
     { btn: "tabBtnSkuAnalysis", panel: "tabSkuAnalysis" },
     { btn: "tabBtnAds", panel: "tabAds" },
   ];
@@ -813,21 +852,21 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   ];
 
   const costTable = [
-    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", is_est:false, product_cost_usd:21.93, freight_usd:2.19, duty_usd:1.21, vat_usd:1.27, landed_cost_usd:26.6, landed_cost:97.69, rec_asp:244.23, actual_asp:267.75 },
-    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", is_est:false, product_cost_usd:21.5, freight_usd:2.15, duty_usd:1.18, vat_usd:1.24, landed_cost_usd:26.07, landed_cost:95.76, rec_asp:239.39, actual_asp:145.56 },
-    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", is_est:false, product_cost_usd:43.84, freight_usd:4.38, duty_usd:2.41, vat_usd:2.53, landed_cost_usd:53.16, landed_cost:195.25, rec_asp:488.12, actual_asp:565.92 },
-    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", is_est:false, product_cost_usd:32.9, freight_usd:3.29, duty_usd:1.81, vat_usd:1.9, landed_cost_usd:39.89, landed_cost:146.51, rec_asp:366.27, actual_asp:337.01 },
-    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", is_est:false, product_cost_usd:36.78, freight_usd:3.68, duty_usd:2.02, vat_usd:2.12, landed_cost_usd:44.61, landed_cost:163.82, rec_asp:409.56, actual_asp:367.58 },
-    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", is_est:false, product_cost_usd:29.4, freight_usd:2.94, duty_usd:1.62, vat_usd:1.7, landed_cost_usd:35.66, landed_cost:130.95, rec_asp:327.37, actual_asp:295.26 },
-    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", is_est:false, product_cost_usd:48.97, freight_usd:4.9, duty_usd:2.69, vat_usd:2.83, landed_cost_usd:59.39, landed_cost:218.1, rec_asp:545.26, actual_asp:699.0 },
-    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", is_est:false, product_cost_usd:15.42, freight_usd:1.54, duty_usd:0.85, vat_usd:0.89, landed_cost_usd:18.7, landed_cost:68.69, rec_asp:171.72, actual_asp:140.31 },
-    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", is_est:false, product_cost_usd:33.64, freight_usd:3.36, duty_usd:1.85, vat_usd:1.94, landed_cost_usd:40.8, landed_cost:149.83, rec_asp:374.57, actual_asp:193.29 },
-    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", is_est:false, product_cost_usd:17.9, freight_usd:1.79, duty_usd:0.98, vat_usd:1.03, landed_cost_usd:21.71, landed_cost:79.74, rec_asp:199.34, actual_asp:199.0 },
-    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", is_est:false, product_cost_usd:2.48, freight_usd:0.25, duty_usd:0.14, vat_usd:0.14, landed_cost_usd:3.01, landed_cost:11.05, rec_asp:27.61, actual_asp:79.0 },
-    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", is_est:false, product_cost_usd:7.15, freight_usd:0.71, duty_usd:0.39, vat_usd:0.41, landed_cost_usd:8.67, landed_cost:31.84, rec_asp:79.61, actual_asp:99.0 },
-    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", is_est:false, product_cost_usd:38.79, freight_usd:3.88, duty_usd:2.13, vat_usd:2.24, landed_cost_usd:47.04, landed_cost:172.77, rec_asp:431.92, actual_asp:null },
-    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", is_est:false, product_cost_usd:18.29, freight_usd:1.83, duty_usd:1.01, vat_usd:1.06, landed_cost_usd:22.18, landed_cost:81.46, rec_asp:203.65, actual_asp:null },
-    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", is_est:false, product_cost_usd:8.53, freight_usd:0.85, duty_usd:0.47, vat_usd:0.49, landed_cost_usd:10.34, landed_cost:37.99, rec_asp:94.98, actual_asp:null },
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", is_est:false, product_cost_usd:21.93, freight_usd:2.19, duty_usd:1.21, vat_usd:1.27, landed_cost_usd:30.59, landed_cost:112.35, rec_asp:280.87, actual_asp:267.75, wac_revised:true },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", is_est:false, product_cost_usd:21.5, freight_usd:2.15, duty_usd:1.18, vat_usd:1.24, landed_cost_usd:26.07, landed_cost:95.76, rec_asp:239.39, actual_asp:145.56, wac_revised:false },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", is_est:false, product_cost_usd:43.84, freight_usd:4.38, duty_usd:2.41, vat_usd:2.53, landed_cost_usd:58.9, landed_cost:216.31, rec_asp:540.78, actual_asp:565.92, wac_revised:true },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", is_est:false, product_cost_usd:32.9, freight_usd:3.29, duty_usd:1.81, vat_usd:1.9, landed_cost_usd:53.29, landed_cost:195.71, rec_asp:489.27, actual_asp:337.01, wac_revised:true },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", is_est:false, product_cost_usd:36.78, freight_usd:3.68, duty_usd:2.02, vat_usd:2.12, landed_cost_usd:46.68, landed_cost:171.42, rec_asp:428.55, actual_asp:367.58, wac_revised:true },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", is_est:false, product_cost_usd:29.4, freight_usd:2.94, duty_usd:1.62, vat_usd:1.7, landed_cost_usd:37.76, landed_cost:138.68, rec_asp:346.7, actual_asp:295.26, wac_revised:true },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", is_est:false, product_cost_usd:48.97, freight_usd:4.9, duty_usd:2.69, vat_usd:2.83, landed_cost_usd:59.39, landed_cost:218.1, rec_asp:545.26, actual_asp:699.0, wac_revised:false },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", is_est:false, product_cost_usd:15.42, freight_usd:1.54, duty_usd:0.85, vat_usd:0.89, landed_cost_usd:19.45, landed_cost:71.42, rec_asp:178.55, actual_asp:140.31, wac_revised:true },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", is_est:false, product_cost_usd:33.64, freight_usd:3.36, duty_usd:1.85, vat_usd:1.94, landed_cost_usd:50.92, landed_cost:186.99, rec_asp:467.48, actual_asp:193.29, wac_revised:true },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", is_est:false, product_cost_usd:17.9, freight_usd:1.79, duty_usd:0.98, vat_usd:1.03, landed_cost_usd:27.96, landed_cost:102.68, rec_asp:256.7, actual_asp:199.0, wac_revised:true },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", is_est:false, product_cost_usd:2.48, freight_usd:0.25, duty_usd:0.14, vat_usd:0.14, landed_cost_usd:4.2, landed_cost:15.43, rec_asp:38.58, actual_asp:79.0, wac_revised:true },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", is_est:false, product_cost_usd:7.15, freight_usd:0.71, duty_usd:0.39, vat_usd:0.41, landed_cost_usd:8.67, landed_cost:31.84, rec_asp:79.61, actual_asp:99.0, wac_revised:false },
+    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", is_est:false, product_cost_usd:38.79, freight_usd:3.88, duty_usd:2.13, vat_usd:2.24, landed_cost_usd:47.04, landed_cost:172.77, rec_asp:431.92, actual_asp:null, wac_revised:false },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", is_est:false, product_cost_usd:18.29, freight_usd:1.83, duty_usd:1.01, vat_usd:1.06, landed_cost_usd:32.55, landed_cost:119.55, rec_asp:298.87, actual_asp:null, wac_revised:true },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", is_est:false, product_cost_usd:8.53, freight_usd:0.85, duty_usd:0.47, vat_usd:0.49, landed_cost_usd:14.72, landed_cost:54.07, rec_asp:135.19, actual_asp:null, wac_revised:true },
   ];
 
   // Aggregate AED $ figures: 0 decimals. Per-unit values (ASP, cost/unit, landed
@@ -924,12 +963,77 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       (r.duty_usd === null || r.duty_usd === undefined ? dash : `<td>$${r.duty_usd.toFixed(1)}</td>`) +
       (r.vat_usd === null || r.vat_usd === undefined ? dash : `<td>$${r.vat_usd.toFixed(1)}</td>`) +
       `<td>${r.landed_cost_usd === null || r.landed_cost_usd === undefined ? "—" : "$" + r.landed_cost_usd.toFixed(1)}</td>` +
-      `<td class="ytd">${r.landed_cost === null ? "—" : r.landed_cost.toFixed(1)}</td>` +
+      `<td class="ytd"${r.wac_revised ? ' title="Revised by a running weighted-average cost batch - see Inventory Costing tab"' : ""}>${r.landed_cost === null ? "—" : r.landed_cost.toFixed(1)}${r.wac_revised ? ' <span style="color:var(--series-2)">●</span>' : ""}</td>` +
       `<td class="pct">${r.rec_asp === null ? "—" : r.rec_asp.toFixed(1)}</td>` +
       `<td class="pct ${aspCls}">${hasAsp ? r.actual_asp.toFixed(1) : "—"}</td>` +
       `<td class="pct ${marginAtActual !== null && marginAtActual < 0 ? "neg" : ""}">${marginAtActual === null ? "—" : marginAtActual.toFixed(1) + "%"}</td>`;
     costTableEl.appendChild(tr);
   });
+
+  // ---------- INVENTORY COSTING TAB ----------
+  const costLedgerData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", current_wac_aed:112.35, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:127,landed_cost_aed:97.69,running_qty:127,running_wac_aed:97.69,note:""},{date:"2026-09-04",qty:60,landed_cost_aed:143.37,running_qty:187,running_wac_aed:112.35,note:"UK batch 04-Sep-2026: product cost (same as UAE) + UK import freight/duty/VAT (10%/2%/20%) + UK→UAE export duty/VAT (5%/5%, AED 23,132 invoice) + pooled freight (export-leg residual + GBP 4,818 @ 1.3514)"}] },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", current_wac_aed:95.76, last_batch_date:"2026-01-01", days_since_last_batch:248, batches:[{date:"2026-01-01",qty:188,landed_cost_aed:95.76,running_qty:188,running_wac_aed:95.76,note:""}] },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", current_wac_aed:216.31, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:320,landed_cost_aed:195.25,running_qty:320,running_wac_aed:195.25,note:""},{date:"2026-09-04",qty:96,landed_cost_aed:286.53,running_qty:416,running_wac_aed:216.31,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", current_wac_aed:195.71, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:144,landed_cost_aed:146.51,running_qty:144,running_wac_aed:146.51,note:""},{date:"2026-09-04",qty:367,landed_cost_aed:215.01,running_qty:511,running_wac_aed:195.71,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", current_wac_aed:171.42, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:109,landed_cost_aed:163.82,running_qty:109,running_wac_aed:163.82,note:""},{date:"2026-09-04",qty:12,landed_cost_aed:240.42,running_qty:121,running_wac_aed:171.42,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", current_wac_aed:138.68, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:249,landed_cost_aed:130.95,running_qty:249,running_wac_aed:130.95,note:""},{date:"2026-09-04",qty:36,landed_cost_aed:192.17,running_qty:285,running_wac_aed:138.68,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", current_wac_aed:218.1, last_batch_date:"2026-01-01", days_since_last_batch:248, batches:[{date:"2026-01-01",qty:23,landed_cost_aed:218.1,running_qty:23,running_wac_aed:218.1,note:""}] },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", current_wac_aed:71.42, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:258,landed_cost_aed:68.69,running_qty:258,running_wac_aed:68.69,note:""},{date:"2026-09-04",qty:24,landed_cost_aed:100.8,running_qty:282,running_wac_aed:71.42,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", current_wac_aed:186.99, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:177,landed_cost_aed:149.83,running_qty:177,running_wac_aed:149.83,note:""},{date:"2026-09-04",qty:200,landed_cost_aed:219.88,running_qty:377,running_wac_aed:186.99,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", current_wac_aed:102.68, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:50,landed_cost_aed:79.74,running_qty:50,running_wac_aed:79.74,note:""},{date:"2026-09-04",qty:80,landed_cost_aed:117.02,running_qty:130,running_wac_aed:102.68,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", current_wac_aed:15.43, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:16,landed_cost_aed:11.05,running_qty:16,running_wac_aed:11.05,note:""},{date:"2026-09-04",qty:90,landed_cost_aed:16.21,running_qty:106,running_wac_aed:15.43,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", current_wac_aed:31.84, last_batch_date:"2026-01-01", days_since_last_batch:248, batches:[{date:"2026-01-01",qty:31,landed_cost_aed:31.84,running_qty:31,running_wac_aed:31.84,note:""}] },
+    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", current_wac_aed:null, last_batch_date:"2026-01-01", days_since_last_batch:248, batches:[{date:"2026-01-01",qty:0,landed_cost_aed:172.77,running_qty:0,running_wac_aed:null,note:""}] },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", current_wac_aed:119.55, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:0,landed_cost_aed:81.46,running_qty:0,running_wac_aed:null,note:""},{date:"2026-09-04",qty:71,landed_cost_aed:119.55,running_qty:71,running_wac_aed:119.55,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", current_wac_aed:54.07, last_batch_date:"2026-09-04", days_since_last_batch:2, batches:[{date:"2026-01-01",qty:5,landed_cost_aed:37.99,running_qty:5,running_wac_aed:37.99,note:""},{date:"2026-09-04",qty:48,landed_cost_aed:55.75,running_qty:53,running_wac_aed:54.07,note:"UK batch 04-Sep-2026 - see LN-WRP7-RIMK note for formula"}] },
+  ];
+  // Only SKUs with real current stock (running_qty > 0 on their latest batch) - a SKU
+  // with zero units right now (e.g. VG-HNBC-EKIS) has nothing to show an ageing/WAC
+  // figure for, same filtering principle as inv_filtered on the Inventory tab.
+  const clStocked = costLedgerData.filter(r => r.batches[r.batches.length - 1].running_qty > 0);
+
+  const clSummaryEl = document.getElementById("costLedgerSummaryBody");
+  clStocked.forEach(r => {
+    const tr = document.createElement("tr");
+    const lastRunningQty = r.batches[r.batches.length - 1].running_qty;
+    tr.innerHTML = `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+      `<td class="ytd">${r.current_wac_aed == null ? "—" : r.current_wac_aed.toFixed(2)}</td>` +
+      `<td>${r.last_batch_date}</td>` +
+      `<td>${r.days_since_last_batch}</td>` +
+      `<td>${lastRunningQty.toLocaleString()}</td>`;
+    clSummaryEl.appendChild(tr);
+  });
+
+  const clSelect = document.getElementById("costLedgerSelect");
+  clStocked.forEach(r => {
+    const opt = document.createElement("option");
+    opt.value = r.sku;
+    opt.textContent = r.name;
+    clSelect.appendChild(opt);
+  });
+
+  function renderCostLedgerDetail(sku) {
+    const tbody = document.getElementById("costLedgerDetailBody");
+    tbody.innerHTML = "";
+    const entry = costLedgerData.find(r => r.sku === sku);
+    if (!entry) return;
+    entry.batches.forEach(b => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${b.date}</td>` +
+        `<td>${b.qty.toLocaleString()}</td>` +
+        `<td>${b.landed_cost_aed.toFixed(2)}</td>` +
+        `<td>${b.running_qty.toLocaleString()}</td>` +
+        `<td class="ytd">${b.running_wac_aed == null ? "—" : b.running_wac_aed.toFixed(2)}</td>` +
+        `<td class="note-cell">${b.note || "Opening balance (existing landed cost)"}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  clSelect.addEventListener("change", () => renderCostLedgerDetail(clSelect.value));
+  if (clStocked.length) {
+    clSelect.value = clStocked[0].sku;
+    renderCostLedgerDetail(clStocked[0].sku);
+  }
 
   // ---------- INVENTORY TAB ----------
   const invData = [
