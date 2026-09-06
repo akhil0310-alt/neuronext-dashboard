@@ -645,6 +645,23 @@
         </table>
       </div>
     </section>
+    <section class="card">
+      <div class="section-head">
+        <span class="section-title">FBA Removal Orders</span>
+        <span class="section-note">From Amazon's FBA Removal Order Detail report. "Aged (Amazon-initiated)" is Amazon automatically returning inventory to warehouse once it exceeds its ageing threshold — the seller didn't request these. "Unfulfillable (auto)" is a separate seller-configured setting for unsellable stock; "Manual" is a seller-requested removal. Disposition Sellable means the returned units are healthy stock, just relocated — nothing lost.</span>
+      </div>
+      <div class="overflow-x">
+        <table class="fee-table" style="min-width:900px">
+          <thead>
+            <tr>
+              <th>Date</th><th>SKU</th><th>Source</th><th>Status</th><th>Disposition</th>
+              <th>Requested</th><th>Shipped</th><th>In-process</th><th>Cancelled</th>
+            </tr>
+          </thead>
+          <tbody id="removalOrdersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <!-- INVENTORY COSTING TAB -->
@@ -1125,6 +1142,76 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       `<td></td>`;
     invTableEl.appendChild(totalRow);
   }
+
+  // ---------- FBA REMOVAL ORDERS ----------
+  const removalOrdersData = [
+    { date:"2026-09-05", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Pending", disposition:"Sellable", requested_qty:8, shipped_qty:0, in_process_qty:8, cancelled_qty:0 },
+    { date:"2026-09-05", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Pending", disposition:"Sellable", requested_qty:1, shipped_qty:0, in_process_qty:1, cancelled_qty:0 },
+    { date:"2026-09-05", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Pending", disposition:"Sellable", requested_qty:3, shipped_qty:0, in_process_qty:3, cancelled_qty:0 },
+    { date:"2026-09-05", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Pending", disposition:"Sellable", requested_qty:1, shipped_qty:0, in_process_qty:1, cancelled_qty:0 },
+    { date:"2026-08-29", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-08-22", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-08-14", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-08-14", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:5, shipped_qty:5, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-08-07", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-08-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-22", sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-22", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-11", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-07", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-06-26", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-06-22", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-06-11", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-06-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-06-07", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-26", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-22", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-22", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-22", sku:"RH218SBPZ", name:"Birth Electric Pump RH218", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-22", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-16", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-05-07", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:1, in_process_qty:0, cancelled_qty:1 },
+    { date:"2026-04-29", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:14, shipped_qty:14, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-29", sku:"RH188SBPZ", name:"Birth Manual Pump RH188", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-29", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-22", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-03-05", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Manual", is_aged:false, status:"Completed", disposition:"Sellable", requested_qty:16, shipped_qty:1, in_process_qty:0, cancelled_qty:15 },
+    { date:"2026-02-25", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:4, shipped_qty:4, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-25", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-25", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:9, shipped_qty:8, in_process_qty:0, cancelled_qty:1 },
+    { date:"2026-02-21", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-21", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-21", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-14", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-14", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-31", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Manual", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-24", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:7, shipped_qty:7, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-24", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:8, shipped_qty:8, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-24", sku:"RH188SBPZ", name:"Birth Manual Pump RH188", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-24", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-21", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-21", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:0, in_process_qty:0, cancelled_qty:1 },
+    { date:"2026-01-17", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-17", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-13", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Manual", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-01-06", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+  ];
+  const removalOrdersTableEl = document.getElementById("removalOrdersTableBody");
+  removalOrdersData.forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.date}</td>` +
+      `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+      `<td${r.is_aged ? ' style="font-weight:700;color:var(--series-2)"' : ''}>${r.source}</td>` +
+      `<td>${r.status}</td>` +
+      `<td>${r.disposition}</td>` +
+      `<td>${r.requested_qty}</td>` +
+      `<td>${r.shipped_qty}</td>` +
+      `<td>${r.in_process_qty}</td>` +
+      `<td>${r.cancelled_qty || ""}</td>`;
+    removalOrdersTableEl.appendChild(tr);
+  });
 
   // ---------- RETURNS BREAKDOWN ----------
   const returnsData = [
