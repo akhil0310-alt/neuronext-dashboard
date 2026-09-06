@@ -582,6 +582,22 @@
     </div>
   </section>
 
+  <!-- REIMBURSEMENTS -->
+  <section class="card">
+    <div class="section-head">
+      <span class="section-title">FBA Reimbursements</span>
+      <span class="section-note">From Amazon's FBA Reimbursements report — this is the actual source for Amazon-caused warehouse loss/damage claims, separate from the Customer Returns report above (that one only covers customer-initiated returns). Any amount here is also already folded into the "Reimbursements / adjustments" line in Other Costs — this table is a detail view, not an additional credit.</span>
+    </div>
+    <div class="overflow-x">
+      <table class="fee-table">
+        <thead>
+          <tr><th>Date</th><th>SKU</th><th>Reason</th><th>Condition</th><th>Qty</th><th class="ytd">Amount (AED)</th></tr>
+        </thead>
+        <tbody id="reimbursementsTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- SCOPE -->
   <section class="card">
     <div class="section-head">
@@ -1133,6 +1149,26 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       `<td>${r.cogs_reversed === null ? "—" : r.cogs_reversed.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
     returnsTableEl.appendChild(tr);
   });
+
+  // ---------- REIMBURSEMENTS ----------
+  const reimbursementsData = [
+    { date:"2026-05-12", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", reason:"CustomerReturn", condition:"NewItem", quantity:1, amount_aed:107.0 },
+  ];
+  const reimbursementsTableEl = document.getElementById("reimbursementsTableBody");
+  if (reimbursementsData.length) {
+    reimbursementsData.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${r.date}</td>` +
+        `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+        `<td>${r.reason}</td>` +
+        `<td>${r.condition}</td>` +
+        `<td>${r.quantity}</td>` +
+        `<td class="ytd">${r.amount_aed.toLocaleString(undefined,{maximumFractionDigits:0})}</td>`;
+      reimbursementsTableEl.appendChild(tr);
+    });
+  } else {
+    reimbursementsTableEl.innerHTML = `<tr><td colspan="6" class="cell-dash">No reimbursements this year.</td></tr>`;
+  }
 
   // ---------- SKU ANALYSIS TAB ----------
   const dailySalesData = [
