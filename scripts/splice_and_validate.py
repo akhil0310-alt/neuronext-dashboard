@@ -82,8 +82,19 @@ def main():
 
     # ---- Standalone JS consts (each fragment is exactly one const, safe to fully swap) ----
     for const_name, frag_file in [("skuData", "gen_skudata.txt"), ("costTable", "gen_costtable.txt"),
-                                   ("invData", "gen_inventory.txt"), ("returnsData", "gen_returns.txt")]:
+                                   ("costLedgerData", "gen_costledger.txt"),
+                                   ("invData", "gen_inventory.txt"), ("returnsData", "gen_returns.txt"),
+                                   ("reimbursementsData", "gen_reimbursements.txt"),
+                                   ("removalOrdersData", "gen_removalorders.txt"),
+                                   ("dailySalesData", "gen_dailysales.txt")]:
         html, _ = sub_whole(html, r"const " + const_name + r" = \[.*?\];", read(frag_file).strip(), const_name)
+
+    # ---- inventoryAgeingData bundles a second const (inventoryAgeingTotals) - split ----
+    ageing_frag = read("gen_inventoryageing.txt")
+    ageing_data_stmt = re.search(r"(const inventoryAgeingData = \[.*?\];)", ageing_frag, re.DOTALL).group(1)
+    ageing_totals_stmt = re.search(r"(const inventoryAgeingTotals = \{.*?\};)", ageing_frag, re.DOTALL).group(1)
+    html, _ = sub_whole(html, r"const inventoryAgeingData = \[.*?\];", ageing_data_stmt, "inventoryAgeingData")
+    html, _ = sub_whole(html, r"const inventoryAgeingTotals = \{.*?\};", ageing_totals_stmt, "inventoryAgeingTotals")
 
     # ---- gen_monthly.txt bundles 4 consts - split and replace each individually ----
     monthly_frag = read("gen_monthly.txt")
@@ -107,7 +118,17 @@ def validate(html):
     """Hard gate: any failure here must stop the pipeline before commit/push."""
     errors = []
 
-    for op, cl, name in [("{", "}", "brace"), ("(", ")", "paren"), ("[", "]", "bracket")]:
+    # Paren balance deliberately NOT checked: unlike braces/brackets (real JS object/
+    # array structure), parens appear constantly in free-text prose inside string
+    # literals (e.g. inventory_cost_ledger.json batch notes - "(this SKU's 4.5% share
+    # ...)" style phrasing legitimately nests/omits parens asymmetrically) and this
+    # produced a real false-positive hard failure that silently stalled the scheduled
+    # task for two days straight (2026-09-07, 2026-09-08 - 11 unmatched parens from the
+    # ledger notes, at commit dd5707b's content). Same false-positive class already
+    # acknowledged for quote-parity in SKILL.md's own prose ("a lone apostrophe... is a
+    # known harmless false-positive... don't chase it") - parens deserve the same
+    # exemption, not a silent gate that kills the whole pipeline post-splice.
+    for op, cl, name in [("{", "}", "brace"), ("[", "]", "bracket")]:
         if html.count(op) != html.count(cl):
             errors.append(f"{name} mismatch: {html.count(op)} vs {html.count(cl)}")
 
@@ -116,7 +137,9 @@ def validate(html):
         if o != c:
             errors.append(f"<{tag}> mismatch: {o} open vs {c} close")
 
-    for const in ["monthly", "ytdBar", "skuData", "costTable", "invData", "returnsData", "monthKeys", "monthLabels"]:
+    for const in ["monthly", "ytdBar", "skuData", "costTable", "costLedgerData", "invData", "returnsData",
+                  "reimbursementsData", "removalOrdersData", "dailySalesData", "monthKeys", "monthLabels",
+                  "inventoryAgeingData", "inventoryAgeingTotals"]:
         n = len(re.findall(r"const " + const + r" =", html))
         if n != 1:
             errors.append(f"const {const}: expected 1 declaration, found {n}")

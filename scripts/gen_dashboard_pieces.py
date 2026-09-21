@@ -91,10 +91,15 @@ def canonical_key(sku):
 def month_obj(m):
     return (
         "{" +
-        f"gross_revenue:{jn(m['revenue'],2)},refunds:{jn(m['refunds'],2)},net_revenue:{jn(m['net_revenue'],2)},"
-        f"cogs:{jn(m['cogs'],2)},gross_margin:{jn(m['gross_margin'],2)},margin_pct:{jn(m['margin_pct'])},"
+        f"gross_revenue:{jn(m['revenue'],2)},refunds:{jn(m['refunds'],2)},"
+        f"refunds_sellable:{jn(m['refunds_sellable'],2)},refunds_non_sellable:{jn(m['refunds_non_sellable'],2)},"
+        f"net_revenue:{jn(m['net_revenue'],2)},net_sales:{jn(m['net_sales'],2)},"
+        f"cogs:{jn(m['cogs'],2)},gross_cogs:{jn(m['gross_cogs'],2)},cogs_reversed_sellable:{jn(m['cogs_reversed_sellable'],2)},"
+        f"gross_margin:{jn(m['gross_margin'],2)},margin_pct:{jn(m['margin_pct'])},"
+        f"gross_margin_new:{jn(m['gross_margin_new'],2)},margin_pct_new:{jn(m['margin_pct_new'])},"
         f"amazon_fees:{jn(m['amazon_fees'],2)},ad_alloc:{jn(m['ad_spend_allocated'],2)},"
-        f"net_profit:{jn(m['net_profit'],2)},net_margin_pct:{jn(m['net_margin_pct'])},asp:{jn(m['asp'],2)},units:{m['units']}"
+        f"net_profit:{jn(m['net_profit'],2)},net_margin_pct:{jn(m['net_margin_pct'])},net_margin_pct_new:{jn(m['net_margin_pct_new'])},"
+        f"asp:{jn(m['asp'],2)},gross_asp:{jn(m['gross_asp'],2)},units:{m['units']}"
         "}"
     )
 
@@ -104,12 +109,16 @@ for r in d['sku_rows']:
     name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
     ytd_obj = (
         "{" +
-        f"gross_revenue:{jn(r['gross_revenue'],2)},refunds:{jn(r['refunds'],2)},net_revenue:{jn(r['net_revenue'],2)},"
-        f"cogs:{jn(r['cogs'],2)},cogs_est:{'true' if r['cogs_is_estimated'] else 'false'},"
+        f"gross_revenue:{jn(r['gross_revenue'],2)},refunds:{jn(r['refunds'],2)},"
+        f"refunds_sellable:{jn(r['refunds_sellable'],2)},refunds_non_sellable:{jn(r['refunds_non_sellable'],2)},"
+        f"net_revenue:{jn(r['net_revenue'],2)},net_sales:{jn(r['net_sales'],2)},"
+        f"cogs:{jn(r['cogs'],2)},gross_cogs:{jn(r['gross_cogs'],2)},cogs_reversed_sellable:{jn(r['cogs_reversed_sellable'],2)},"
+        f"cogs_est:{'true' if r['cogs_is_estimated'] else 'false'},"
         f"gross_margin:{jn(r['gross_margin'],2)},margin_pct:{jn(r['margin_pct'])},"
+        f"gross_margin_new:{jn(r['gross_margin_new'],2)},margin_pct_new:{jn(r['margin_pct_new'])},"
         f"amazon_fees:{jn(r['amazon_fees'],2)},ad_alloc:{jn(r['ad_spend_allocated'],2)},"
-        f"net_profit:{jn(r['net_profit'],2)},net_margin_pct:{jn(r['net_margin_pct'])},"
-        f"asp:{jn(r['asp'],2)},cpu:{jn(r['cost_per_unit'],2)},units:{r['units']}"
+        f"net_profit:{jn(r['net_profit'],2)},net_margin_pct:{jn(r['net_margin_pct'])},net_margin_pct_new:{jn(r['net_margin_pct_new'])},"
+        f"asp:{jn(r['asp'],2)},gross_asp:{jn(r['gross_asp'],2)},cpu:{jn(r['cost_per_unit'],2)},units:{r['units']}"
         "}"
     )
     months_obj = "{" + ",".join(f"{js_str(mk)}:{month_obj(mv)}" for mk, mv in sorted(r['months'].items())) + "}"
@@ -118,6 +127,25 @@ for r in d['sku_rows']:
 skudata_js = "const skuData = [\n" + "\n".join(sku_lines) + "\n  ];"
 with open('gen_skudata.txt', 'w', encoding='utf-8') as f:
     f.write(skudata_js + "\n")
+
+# ---------- dailySalesData (SKU Analysis tab) ----------
+daily_sku_lines = []
+for sku in CANONICAL_ORDER:
+    rows = d['daily_sales'].get(sku, [])
+    if not rows:
+        continue
+    name = SKU_SHORT_NAME.get(sku, sku)
+    row_strs = [
+        "{date:" + js_str(row['date']) + ",units:" + str(row['units']) +
+        ",price:" + jn(row['price'], 2) + "}"
+        for row in rows
+    ]
+    daily_sku_lines.append(
+        f"    {{ sku:{js_str(sku)}, name:{js_str(name)}, days:[" + ",".join(row_strs) + "] },"
+    )
+dailysales_js = "const dailySalesData = [\n" + "\n".join(daily_sku_lines) + "\n  ];"
+with open('gen_dailysales.txt', 'w', encoding='utf-8') as f:
+    f.write(dailysales_js + "\n")
 
 # ---------- costTable ----------
 cost_lines = []
@@ -129,11 +157,35 @@ for r in ct_sorted:
         f"product_cost_usd:{jn(r['product_cost_usd'])}, freight_usd:{jn(r['freight_usd'])}, "
         f"duty_usd:{jn(r['duty_usd'])}, vat_usd:{jn(r['vat_usd'])}, "
         f"landed_cost_usd:{jn(r['landed_cost_usd'])}, landed_cost:{jn(r['landed_cost'])}, "
-        f"rec_asp:{jn(r['recommended_asp_60pct_margin'])}, actual_asp:{jn(r['actual_asp'])} }},"
+        f"rec_asp:{jn(r['recommended_asp_60pct_margin'])}, actual_asp:{jn(r['actual_asp'])}, "
+        f"wac_revised:{'true' if r.get('wac_revised') else 'false'} }},"
     )
 costtable_js = "const costTable = [\n" + "\n".join(cost_lines) + "\n  ];"
 with open('gen_costtable.txt', 'w', encoding='utf-8') as f:
     f.write(costtable_js + "\n")
+
+# ---------- costLedgerData (Inventory Movement & Costing tab) ----------
+ledger_lines = []
+ledger_sorted = sorted(d['cost_ledger'], key=lambda r: canonical_key(r['sku']))
+for r in ledger_sorted:
+    name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
+    batch_strs = []
+    for b in r['batches']:
+        batch_strs.append(
+            "{date:" + js_str(b['date']) + ",qty:" + str(b['qty']) +
+            ",landed_cost_aed:" + jn(b['landed_cost_aed']) +
+            ",running_qty:" + str(b['running_qty']) +
+            ",running_wac_aed:" + jn(b['running_wac_aed']) +
+            ",note:" + js_str(b['note']) + "}"
+        )
+    ledger_lines.append(
+        f"    {{ sku:{js_str(r['sku'])}, name:{js_str(name)}, "
+        f"current_wac_aed:{jn(r['current_wac_aed'])}, last_batch_date:{js_str(r['last_batch_date'])}, "
+        f"days_since_last_batch:{r['days_since_last_batch']}, batches:[" + ",".join(batch_strs) + "] },"
+    )
+costledger_js = "const costLedgerData = [\n" + "\n".join(ledger_lines) + "\n  ];"
+with open('gen_costledger.txt', 'w', encoding='utf-8') as f:
+    f.write(costledger_js + "\n")
 
 # ---------- waterfall steps ----------
 wf_max = ytd['gross_revenue']
@@ -187,6 +239,9 @@ for r in sorted(d.get('returns_breakdown', []), key=lambda x: canonical_key(x['s
     name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
     returns_lines.append(
         f"    {{ sku:{js_str(r['sku'])}, name:{js_str(name)}, sellable:{r['sellable']}, "
+        f"customer_damaged:{r.get('customer_damaged', 0)}, defective:{r.get('defective', 0)}, "
+        f"amazon_damaged:{r.get('amazon_damaged', 0)}, "
+        f"other_non_sellable:{r.get('other_non_sellable', 0)}, "
         f"non_sellable:{r['non_sellable']}, total_returns:{r['total_returns']}, "
         f"cogs_reversed:{jn(r['cogs_reversed'])} }},"
     )
@@ -195,6 +250,63 @@ with open('gen_returns.txt', 'w', encoding='utf-8') as f:
     f.write(returns_js + "\n")
 
 kpi['cogs_reversed_ytd'] = d.get('cogs_reversed_ytd', 0)
+
+# ---------- reimbursements (FBA Reimbursements report, added 2026-09-06) ----------
+reimb_lines = []
+for r in d.get('reimbursements', []):
+    name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
+    reimb_lines.append(
+        f"    {{ date:{js_str(r['date'])}, sku:{js_str(r['sku'])}, name:{js_str(name)}, "
+        f"reason:{js_str(r['reason'])}, condition:{js_str(r['condition'])}, "
+        f"quantity:{r['quantity']}, amount_aed:{jn(r['amount_aed'])} }},"
+    )
+reimb_js = "const reimbursementsData = [\n" + "\n".join(reimb_lines) + "\n  ];"
+with open('gen_reimbursements.txt', 'w', encoding='utf-8') as f:
+    f.write(reimb_js + "\n")
+
+# ---------- removal orders (FBA Removal Order Detail report, added 2026-09-06) ----------
+removal_lines = []
+for r in d.get('removal_orders', []):
+    name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
+    removal_lines.append(
+        f"    {{ date:{js_str(r['date'])}, sku:{js_str(r['sku'])}, name:{js_str(name)}, "
+        f"source:{js_str(r['source'])}, is_aged:{'true' if r['is_aged'] else 'false'}, "
+        f"status:{js_str(r['status'])}, disposition:{js_str(r['disposition'])}, "
+        f"requested_qty:{r['requested_qty']}, shipped_qty:{r['shipped_qty']}, "
+        f"in_process_qty:{r['in_process_qty']}, cancelled_qty:{r['cancelled_qty']} }},"
+    )
+removal_js = "const removalOrdersData = [\n" + "\n".join(removal_lines) + "\n  ];"
+with open('gen_removalorders.txt', 'w', encoding='utf-8') as f:
+    f.write(removal_js + "\n")
+
+# ---------- inventory ageing matrix (warehouse SOH FIFO reconstruction, added 2026-09-21) ----------
+AGEING_BUCKET_NAMES = ["0-90", "90-120", "120-180", "180-270", "270-360", "360+"]
+ageing_lines = []
+for r in d.get('inventory_ageing', []):
+    name = SKU_SHORT_NAME.get(r['sku'], r['sku'])
+    buckets_js = ", ".join(
+        f"{{ units:{r['buckets'][b]['units']}, value:{jn(r['buckets'][b]['value'],2)} }}"
+        for b in AGEING_BUCKET_NAMES
+    )
+    ageing_lines.append(
+        f"    {{ sku:{js_str(r['sku'])}, name:{js_str(name)}, "
+        f"landedCost:{jn(r['landed_cost'],2)}, markedDownCost:{jn(r['marked_down_cost'],2)}, "
+        f"totalUnits:{r['total_units']}, totalValue:{jn(r['total_value'],2)}, "
+        f"buckets:[{buckets_js}] }},"
+    )
+ageing_totals = d.get('inventory_ageing_totals', {})
+totals_buckets_js = ", ".join(
+    f"{{ units:{ageing_totals.get('buckets', {}).get(b, {'units':0,'value':0})['units']}, "
+    f"value:{jn(ageing_totals.get('buckets', {}).get(b, {'units':0,'value':0})['value'],2)} }}"
+    for b in AGEING_BUCKET_NAMES
+)
+ageing_js = (
+    "const inventoryAgeingData = [\n" + "\n".join(ageing_lines) + "\n  ];\n"
+    f"const inventoryAgeingTotals = {{ totalUnits:{ageing_totals.get('total_units', 0)}, "
+    f"totalValue:{jn(ageing_totals.get('total_value', 0),2)}, buckets:[{totals_buckets_js}] }};"
+)
+with open('gen_inventoryageing.txt', 'w', encoding='utf-8') as f:
+    f.write(ageing_js + "\n")
 
 with open('gen_kpi.json', 'w', encoding='utf-8') as f:
     json.dump(kpi, f, indent=2)
