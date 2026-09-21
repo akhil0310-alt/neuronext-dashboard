@@ -653,10 +653,11 @@
         <span class="section-note">Warehouse stock only, reconstructed via FIFO depletion from the "Neuronext SOH &amp; Outbound" tracker's dated inward/outbound history (ties to the tracker's own "Remaining" figures within 0-2 units). Amazon FBA stock isn't included here — Amazon's API exposes no per-lot receipt date, so once units move to Amazon their individual age can no longer be tracked (see FBA Removal Orders below for a partial, Amazon-initiated proxy). Marked Down Cost applies this SKU's blended write-down provision to its current landed cost: 0% up to 90 days, 10% at 90-120, 25% at 120-180, 50% at 180-270, 75% at 270-360, 100% beyond 360 days.</span>
       </div>
       <div class="overflow-x">
-        <table class="sku-table" style="min-width:1300px">
+        <table class="sku-table" style="min-width:1450px">
           <thead>
             <tr>
-              <th>SKU</th><th>Landed Cost (AED)</th><th>Marked Down Cost (AED)</th>
+              <th>SKU</th><th>Product Cost (USD)</th><th>Landed Cost (USD)</th>
+              <th>Landed Cost (AED)</th><th>Marked Down Cost (AED)</th>
               <th>0-90d (0%)</th><th>90-120d (10%)</th><th>120-180d (25%)</th><th>180-270d (50%)</th><th>270-360d (75%)</th><th>360d+ (100%)</th>
               <th class="ytd">Total</th>
             </tr>
@@ -1223,7 +1224,10 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   const ageingBucketCell = b => `<td>${ageingCellContent(b)}</td>`;
   inventoryAgeingData.forEach(r => {
     const tr = document.createElement("tr");
+    const ageingCostRow = costTable.find(c => c.sku === r.sku);
     tr.innerHTML = `<td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+      `<td>${ageingCostRow && ageingCostRow.product_cost_usd != null ? "$" + ageingCostRow.product_cost_usd.toFixed(1) : "—"}</td>` +
+      `<td>${ageingCostRow && ageingCostRow.landed_cost_usd != null ? "$" + ageingCostRow.landed_cost_usd.toFixed(1) : "—"}</td>` +
       `<td>${r.landedCost.toFixed(2)}</td>` +
       `<td>${r.markedDownCost.toFixed(2)}</td>` +
       r.buckets.map(ageingBucketCell).join("") +
@@ -1233,7 +1237,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   {
     const totalRow = document.createElement("tr");
     totalRow.className = "total";
-    totalRow.innerHTML = `<td>Total</td><td></td><td></td>` +
+    totalRow.innerHTML = `<td>Total</td><td></td><td></td><td></td><td></td>` +
       inventoryAgeingTotals.buckets.map(ageingBucketCell).join("") +
       `<td class="ytd">${ageingCellContent({ units: inventoryAgeingTotals.totalUnits, value: inventoryAgeingTotals.totalValue })}</td>`;
     ageingTableEl.appendChild(totalRow);
