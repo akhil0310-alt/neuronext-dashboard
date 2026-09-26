@@ -112,9 +112,9 @@
     text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
     color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
   }
-  table.inv-table th:first-child { text-align: left; padding-left: 0; }
+  table.inv-table th:first-child { text-align: left; padding-left: 0; position: sticky; left: 0; z-index: 2; background: var(--surface); }
   table.inv-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  table.inv-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; }
+  table.inv-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
   table.inv-table tr:last-child td { border-bottom: none; }
   table.inv-table tr.reorder td { background: var(--critical-soft); }
   table.inv-table td.reorder-flag { font-weight: 700; color: var(--critical); }
@@ -232,6 +232,7 @@
 
   /* ---------- period filter ---------- */
   .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+  .unit-econ-toggle { display: flex; gap: 6px; }
   .filter-btn {
     font: inherit; font-size: 12px; font-weight: 600; color: var(--ink-2);
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
@@ -267,14 +268,16 @@
   table.fee-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
   table.fee-table tr.pct-row td { color: var(--pct-blue); font-size: 11px; }
   table.fee-table tr.pct-row td:first-child { padding-left: 14px; }
+  table.fee-table tr.sub-row td { font-size: 11px; }
+  table.fee-table tr.sub-row td:first-child { padding-left: 14px; color: var(--ink-muted); font-weight: 400; }
   table.fee-table th {
     text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
     color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
   }
-  table.fee-table th:first-child { text-align: left; padding-left: 0; }
+  table.fee-table th:first-child { text-align: left; padding-left: 0; position: sticky; left: 0; z-index: 2; background: var(--surface); }
   table.fee-table th.ytd, table.fee-table th.pct { color: var(--ink); }
   table.fee-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  table.fee-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; }
+  table.fee-table td:first-child { text-align: left; color: var(--ink); font-weight: 500; padding-left: 0; position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
   table.fee-table tr:last-child td { border-bottom: none; }
   table.fee-table td.neg { color: var(--critical); }
   table.fee-table td.pos { color: var(--good); }
@@ -282,16 +285,25 @@
   table.fee-table tr.total td { font-weight: 700; border-top: 1px solid var(--border-strong); padding-top: 9px; background: var(--surface-2); }
   table.fee-table tr.total.final td { font-size: 12.5px; }
 
+  /* ---------- Product-wise profitability: 4 frozen leading columns (SKU/Qty/ASP/Cost-per-unit) ---------- */
+  table.profit-frozen { table-layout: fixed; }
+  table.profit-frozen th:nth-child(1), table.profit-frozen td:nth-child(1) { width: 210px; left: 0; text-align: left; padding-left: 0; color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; box-shadow: none; }
+  table.profit-frozen th:nth-child(2), table.profit-frozen td:nth-child(2) { width: 90px; left: 210px; text-align: right; padding-left: 6px; color: var(--ink-2); font-weight: 400; box-shadow: none; }
+  table.profit-frozen th:nth-child(3), table.profit-frozen td:nth-child(3) { width: 66px; left: 300px; }
+  table.profit-frozen th:nth-child(4), table.profit-frozen td:nth-child(4) { width: 66px; left: 366px; }
+  table.profit-frozen th:nth-child(5), table.profit-frozen td:nth-child(5) { width: 76px; left: 432px; box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
+  table.profit-frozen th:nth-child(-n+5), table.profit-frozen td:nth-child(-n+5) { position: sticky; z-index: 2; background: var(--surface); }
+
   /* ---------- sku matrix table ---------- */
   table.sku-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
   table.sku-table th {
     text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em;
     color: var(--ink-muted); font-weight: 700; padding: 0 6px 8px; border-bottom: 1px solid var(--border-strong); white-space: nowrap;
   }
-  table.sku-table th:first-child { text-align: left; padding-left: 0; min-width: 190px; }
+  table.sku-table th:first-child { text-align: left; padding-left: 0; min-width: 190px; position: sticky; left: 0; z-index: 2; background: var(--surface); }
   table.sku-table th.ytd { color: var(--ink); }
   table.sku-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: middle; border-radius: 6px; }
-  table.sku-table td:first-child { text-align: left; padding-left: 0; border-radius: 0; }
+  table.sku-table td:first-child { text-align: left; padding-left: 0; border-radius: 0; position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
   table.sku-table tr:last-child td { border-bottom: none; }
   table.sku-table .cell-rev { font-weight: 600; font-variant-numeric: tabular-nums; display: block; }
   table.sku-table .cell-units { color: var(--ink-2); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; display: block; }
@@ -476,20 +488,24 @@
   <section class="card">
     <div class="section-head">
       <span class="section-title">Product-wise profitability</span>
-      <span class="section-note">AED — net of refunds. Amazon fees include storage (both allocated pro-rata by each SKU's share of gross revenue, since Amazon doesn't report either per SKU — commission, fulfillment and chargebacks within that figure ARE real per-SKU data). Ad spend is allocated the same way. COGS is sourced from real NEXTWAVE invoices for every SKU here.</span>
+      <span class="section-note">AED — net of refunds. Total Inv Qty is current combined AZ+WH stock (same figure as "Total Inv" on the Inventory tab), not a sales metric — shown for context alongside profitability. Amazon fees include storage (both allocated pro-rata by each SKU's share of gross revenue, since Amazon doesn't report either per SKU — commission, fulfillment and chargebacks within that figure ARE real per-SKU data). Ad spend is allocated the same way. COGS is sourced from real NEXTWAVE invoices for every SKU here.</span>
     </div>
     <div class="filter-bar" id="profitFilterBar"></div>
+    <div class="unit-econ-toggle">
+      <button class="filter-btn active" id="btnAggregateView" type="button">Aggregate (AED)</button>
+      <button class="filter-btn" id="btnPerUnitView" type="button">Per unit (AED/unit)</button>
+    </div>
     <div class="overflow-x">
-      <table class="fee-table" style="min-width:1320px">
+      <table class="fee-table profit-frozen" style="min-width:1320px">
         <thead>
           <tr>
-            <th>SKU</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
-            <th>Gross revenue</th><th>Sellable returns</th><th>Net sales</th>
-            <th>Gross COGS</th><th>Sellable returns (COGS)</th><th>Net COGS</th>
-            <th>Gross margin</th><th class="pct">Gross margin % (of net sales)</th>
-            <th>Damages (non-sellable returns)</th>
-            <th>Amazon fees</th><th>Ad spend (alloc.)</th>
-            <th class="ytd">Net profit</th><th class="pct">Net margin % (of net sales)</th>
+            <th>SKU</th><th>Total Inv Qty</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
+            <th><span class="unit-label">Gross revenue</span></th><th><span class="unit-label">Sellable returns</span></th><th><span class="unit-label">Net sales</span></th>
+            <th><span class="unit-label">Gross COGS</span></th><th><span class="unit-label">Sellable returns (COGS)</span></th><th><span class="unit-label">Net COGS</span></th>
+            <th><span class="unit-label">Gross margin</span></th><th class="pct">Gross margin % (of net sales)</th>
+            <th><span class="unit-label">Damages (non-sellable returns)</span></th>
+            <th><span class="unit-label">Amazon fees</span></th><th><span class="unit-label">Ad spend (alloc.)</span></th>
+            <th class="ytd"><span class="unit-label">Net profit</span></th><th class="pct">Net margin % (of net sales)</th>
           </tr>
         </thead>
         <tbody id="profitTableBody"></tbody>
@@ -515,7 +531,7 @@
   <section class="card">
     <div class="section-head">
       <span class="section-title">Monthwise Profitability</span>
-      <span class="section-note">AED, monthly with YTD total — from Finances API. All % rows are % of gross revenue. Refunds are split by return disposition (FBA Customer Returns report) — proportional to each SKU-month's sellable vs non-sellable return count; a refund with no matching return record counts as non-sellable.</span>
+      <span class="section-note">AED, monthly with YTD total — from Finances API. All % rows are % of gross revenue. Refunds are split by return disposition (FBA Customer Returns report) — proportional to each SKU-month's sellable vs non-sellable return count; a refund with no matching return record counts as non-sellable. "Other costs" is broken down into its components directly below that row (indented) — commission, fulfillment fees, chargebacks, shipping/payment charges, refund fee credits, storage, and reimbursements/adjustments.</span>
     </div>
     <div class="overflow-x">
       <table class="fee-table fee-breakdown-table">
@@ -546,7 +562,7 @@
       </table>
     </div>
     <details class="table-view">
-      <summary>View "Other costs" breakdown (YTD)</summary>
+      <summary>View "Other costs" breakdown (YTD) - temporary, pending a fresh data pull for the monthly inline version</summary>
       <table>
         <thead><tr><th>Component</th><th>AED</th><th>% of Gross Rev</th></tr></thead>
         <tbody>
@@ -908,6 +924,27 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     monthlyTableEl.appendChild(tr);
   });
 
+  // invData is declared here (rather than down by the Inventory tab rendering logic
+  // that's its main consumer) because Product-wise Profitability's Total Inv Qty
+  // column, rendered next, needs it too - const declarations must precede their first
+  // use, same reasoning as dailySalesData below.
+  const invData = [
+    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", az_inv:12, wh_inv:165, total_inv:177, units_sold_ytd:88, avg_daily_sales:0.327, reorder_point:29.4, days_of_cover:541.1, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", az_inv:21, wh_inv:123, total_inv:144, units_sold_ytd:123, avg_daily_sales:0.457, reorder_point:41.2, days_of_cover:314.9, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", az_inv:14, wh_inv:399, total_inv:413, units_sold_ytd:29, avg_daily_sales:0.108, reorder_point:9.7, days_of_cover:3830.9, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", az_inv:15, wh_inv:482, total_inv:497, units_sold_ytd:36, avg_daily_sales:0.134, reorder_point:12.0, days_of_cover:3713.7, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", az_inv:5, wh_inv:115, total_inv:120, units_sold_ytd:14, avg_daily_sales:0.052, reorder_point:4.7, days_of_cover:2305.7, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", az_inv:12, wh_inv:271, total_inv:283, units_sold_ytd:16, avg_daily_sales:0.059, reorder_point:5.4, days_of_cover:4757.9, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", az_inv:6, wh_inv:16, total_inv:22, units_sold_ytd:5, avg_daily_sales:0.019, reorder_point:1.7, days_of_cover:1183.6, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", az_inv:10, wh_inv:269, total_inv:279, units_sold_ytd:22, avg_daily_sales:0.082, reorder_point:7.4, days_of_cover:3411.4, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", az_inv:5, wh_inv:362, total_inv:367, units_sold_ytd:8, avg_daily_sales:0.03, reorder_point:2.7, days_of_cover:12340.4, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", az_inv:5, wh_inv:122, total_inv:127, units_sold_ytd:6, avg_daily_sales:0.022, reorder_point:2.0, days_of_cover:5693.8, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", az_inv:5, wh_inv:105, total_inv:110, units_sold_ytd:3, avg_daily_sales:0.011, reorder_point:1.0, days_of_cover:9863.3, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", az_inv:5, wh_inv:31, total_inv:36, units_sold_ytd:1, avg_daily_sales:0.004, reorder_point:0.3, days_of_cover:9684.0, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", az_inv:5, wh_inv:71, total_inv:76, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", az_inv:0, wh_inv:53, total_inv:53, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
+  ];
+
   // ---------- PRODUCT PROFITABILITY (filterable by period) ----------
   const skuData = [
     { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", ytd:{gross_revenue:23562.0,refunds:-3935.0,refunds_sellable:-249.0,refunds_non_sellable:-3686.0,net_revenue:19627.0,net_sales:23313.0,cogs:8499.26,gross_cogs:8596.95,cogs_reversed_sellable:97.69,cogs_est:false,gross_margin:11127.74,margin_pct:56.7,gross_margin_new:14813.74,margin_pct_new:63.5,amazon_fees:-3914.32,ad_alloc:-5598.35,net_profit:742.58,net_margin_pct:3.8,net_margin_pct_new:3.2,asp:223.03,gross_asp:267.75,cpu:97.69,units:88}, months:{"2026-01":{gross_revenue:5380.0,refunds:-996.0,refunds_sellable:-0.0,refunds_non_sellable:-996.0,net_revenue:4384.0,net_sales:5380.0,cogs:1953.85,gross_cogs:1953.85,cogs_reversed_sellable:0.0,gross_margin:2430.15,margin_pct:55.4,gross_margin_new:3426.15,margin_pct_new:63.7,amazon_fees:-900.27,ad_alloc:-1326.21,net_profit:34.31,net_margin_pct:0.8,net_margin_pct_new:0.6,asp:219.2,gross_asp:269.0,units:20},"2026-02":{gross_revenue:2490.0,refunds:-498.0,refunds_sellable:-0.0,refunds_non_sellable:-498.0,net_revenue:1992.0,net_sales:2490.0,cogs:976.93,gross_cogs:976.93,cogs_reversed_sellable:0.0,gross_margin:1015.07,margin_pct:51.0,gross_margin_new:1513.07,margin_pct_new:60.8,amazon_fees:-424.27,ad_alloc:-818.07,net_profit:-326.86,net_margin_pct:-16.4,net_margin_pct_new:-13.1,asp:199.2,gross_asp:249.0,units:10},"2026-03":{gross_revenue:1345.0,refunds:0.0,refunds_sellable:0.0,refunds_non_sellable:0.0,net_revenue:1345.0,net_sales:1345.0,cogs:488.46,gross_cogs:488.46,cogs_reversed_sellable:0.0,gross_margin:856.54,margin_pct:63.7,gross_margin_new:856.54,margin_pct_new:63.7,amazon_fees:-264.49,ad_alloc:-299.63,net_profit:163.01,net_margin_pct:12.1,net_margin_pct_new:12.1,asp:269.0,gross_asp:269.0,units:5},"2026-04":{gross_revenue:5528.0,refunds:-996.0,refunds_sellable:-249.0,refunds_non_sellable:-747.0,net_revenue:4532.0,net_sales:5279.0,cogs:2051.54,gross_cogs:2149.24,cogs_reversed_sellable:97.69,gross_margin:2480.46,margin_pct:54.7,gross_margin_new:3227.46,margin_pct_new:61.1,amazon_fees:-865.81,ad_alloc:-2275.15,net_profit:-826.18,net_margin_pct:-18.2,net_margin_pct_new:-15.7,asp:206.0,gross_asp:251.27,units:22},"2026-05":{gross_revenue:4135.0,refunds:-299.0,refunds_sellable:-0.0,refunds_non_sellable:-299.0,net_revenue:3836.0,net_sales:4135.0,cogs:1465.39,gross_cogs:1465.39,cogs_reversed_sellable:0.0,gross_margin:2370.61,margin_pct:61.8,gross_margin_new:2669.61,margin_pct_new:64.6,amazon_fees:-734.07,ad_alloc:-960.86,net_profit:577.03,net_margin_pct:15.0,net_margin_pct_new:14.0,asp:255.73,gross_asp:275.67,units:15},"2026-06":{gross_revenue:2940.0,refunds:-299.0,refunds_sellable:-0.0,refunds_non_sellable:-299.0,net_revenue:2641.0,net_sales:2940.0,cogs:976.93,gross_cogs:976.93,cogs_reversed_sellable:0.0,gross_margin:1664.07,margin_pct:63.0,gross_margin_new:1963.07,margin_pct_new:66.8,amazon_fees:-506.99,ad_alloc:-702.86,net_profit:366.85,net_margin_pct:13.9,net_margin_pct_new:12.5,asp:264.1,gross_asp:294.0,units:10},"2026-07":{gross_revenue:847.0,refunds:-548.0,refunds_sellable:-0.0,refunds_non_sellable:-548.0,net_revenue:299.0,net_sales:847.0,cogs:293.08,gross_cogs:293.08,cogs_reversed_sellable:0.0,gross_margin:5.92,margin_pct:2.0,gross_margin_new:553.92,margin_pct_new:65.4,amazon_fees:-84.44,ad_alloc:-11.73,net_profit:-119.21,net_margin_pct:-39.9,net_margin_pct_new:-14.1,asp:99.67,gross_asp:282.33,units:3},"2026-08":{gross_revenue:897.0,refunds:-299.0,refunds_sellable:-0.0,refunds_non_sellable:-299.0,net_revenue:598.0,net_sales:897.0,cogs:293.08,gross_cogs:293.08,cogs_reversed_sellable:0.0,gross_margin:304.92,margin_pct:51.0,gross_margin_new:603.92,margin_pct_new:67.3,amazon_fees:-133.98,ad_alloc:-168.52,net_profit:-30.66,net_margin_pct:-5.1,net_margin_pct_new:-3.4,asp:199.33,gross_asp:299.0,units:3}} },
@@ -948,6 +985,16 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   const cellN1 = (v, cls) => v === null || v === undefined ? '<td class="cell-dash">—</td>' : `<td class="${cls||""}">${v < 0 ? "−" : ""}${Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})}</td>`;
   const cellPct = v => v === null || v === undefined ? '<td class="pct cell-dash">—</td>' : `<td class="pct ${v<0?"neg":""}">${v<0?"−":""}${Math.abs(v).toFixed(1)}%</td>`;
 
+  // ---------- Product-wise profitability: Aggregate vs Per-unit toggle ----------
+  // Per-unit mode divides every aggregate AED column (everything from Gross revenue
+  // onward, excluding the already-per-unit ASP/Cost-per-unit columns and the two %
+  // columns) by that row's own Qty sold - never by a different row's or the table's
+  // units, so a SKU with 0 units this period shows "—" rather than dividing by zero.
+  let profitViewMode = "aggregate";
+  const cellMoney = (v, cls, units) => (profitViewMode === "per-unit")
+    ? cellN1(units ? v / units : null, cls)
+    : cellN0(v, cls);
+
   function renderProfitTable(period) {
     const tbody = document.getElementById("profitTableBody");
     tbody.innerHTML = "";
@@ -964,19 +1011,23 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     // "Revenue by SKU" table, YTD gross revenue descending) so every table on the
     // dashboard shows SKUs in the same row order, for every period filter.
     const tot = { gross_revenue:0, refunds_sellable:0, net_sales:0, gross_cogs:0, cogs_reversed_sellable:0, cogs:0,
-      gross_margin_new:0, refunds_non_sellable:0, amazon_fees:0, ad_alloc:0, net_profit:0, units:0 };
+      gross_margin_new:0, refunds_non_sellable:0, amazon_fees:0, ad_alloc:0, net_profit:0, units:0, total_inv_qty:0 };
     rows.forEach(r => {
       const d = r.d;
+      const u = d.units || 0;
+      const invRow = invData.find(v => v.sku === r.sku);
+      const totalInvQty = invRow ? invRow.total_inv : null;
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${r.name}</td>` +
-        `<td>${d.units || 0}</td>` +
+      tr.innerHTML = `<td title="${r.name}">${r.name}</td>` +
+        (totalInvQty === null ? '<td class="cell-dash">—</td>' : `<td>${totalInvQty.toLocaleString()}</td>`) +
+        `<td>${u}</td>` +
         cellN1(d.gross_asp) + cellN1(r.cpu) +
-        cellN0(d.gross_revenue) + cellN0(d.refunds_sellable, "neg") + cellN0(d.net_sales) +
-        cellN0(-Math.abs(d.gross_cogs), "neg") + cellN0(d.cogs_reversed_sellable) + cellN0(-Math.abs(d.cogs), "neg") +
-        cellN0(d.gross_margin_new) + cellPct(d.margin_pct_new) +
-        cellN0(d.refunds_non_sellable, "neg") +
-        cellN0(d.amazon_fees) + cellN0(d.ad_alloc) +
-        `<td class="ytd ${d.net_profit<0?"neg":""}">${d.net_profit<0?"−":""}${Math.abs(d.net_profit).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>` +
+        cellMoney(d.gross_revenue, "", u) + cellMoney(d.refunds_sellable, "neg", u) + cellMoney(d.net_sales, "", u) +
+        cellMoney(-Math.abs(d.gross_cogs), "neg", u) + cellMoney(d.cogs_reversed_sellable, "", u) + cellMoney(-Math.abs(d.cogs), "neg", u) +
+        cellMoney(d.gross_margin_new, "", u) + cellPct(d.margin_pct_new) +
+        cellMoney(d.refunds_non_sellable, "neg", u) +
+        cellMoney(d.amazon_fees, "", u) + cellMoney(d.ad_alloc, "", u) +
+        cellMoney(d.net_profit, "ytd" + (d.net_profit < 0 ? " neg" : ""), u) +
         cellPct(d.net_margin_pct_new);
       tbody.appendChild(tr);
       tot.gross_revenue += d.gross_revenue; tot.refunds_sellable += d.refunds_sellable; tot.net_sales += d.net_sales;
@@ -984,6 +1035,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
       tot.gross_margin_new += d.gross_margin_new; tot.refunds_non_sellable += d.refunds_non_sellable;
       tot.amazon_fees += d.amazon_fees; tot.ad_alloc += d.ad_alloc; tot.net_profit += d.net_profit;
       tot.units += d.units || 0;
+      tot.total_inv_qty += totalInvQty || 0;
     });
     const totRow = document.createElement("tr");
     totRow.className = "total";
@@ -991,21 +1043,23 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     const totNetMargin = tot.net_sales ? (tot.net_profit / tot.net_sales * 100) : null;
     const totAsp = tot.units ? (tot.gross_revenue / tot.units) : null;
     const totCpu = tot.units ? (tot.gross_cogs / tot.units) : null;
-    totRow.innerHTML = `<td>Total (${rows.length} SKU${rows.length===1?"":"s"} with sales this period)</td>` +
+    totRow.innerHTML = `<td title="Total (${rows.length} SKU${rows.length===1?"":"s"} with sales this period)">Total (${rows.length} SKU${rows.length===1?"":"s"})</td>` +
+      `<td>${tot.total_inv_qty.toLocaleString()}</td>` +
       `<td>${tot.units}</td>` +
       cellN1(totAsp) + cellN1(totCpu) +
-      cellN0(tot.gross_revenue) + cellN0(tot.refunds_sellable, "neg") + cellN0(tot.net_sales) +
-      cellN0(-Math.abs(tot.gross_cogs), "neg") + cellN0(tot.cogs_reversed_sellable) + cellN0(-Math.abs(tot.cogs), "neg") +
-      cellN0(tot.gross_margin_new) + cellPct(totMargin) +
-      cellN0(tot.refunds_non_sellable, "neg") +
-      cellN0(tot.amazon_fees) + cellN0(tot.ad_alloc) +
-      `<td class="ytd ${tot.net_profit<0?"neg":""}">${tot.net_profit<0?"−":""}${Math.abs(tot.net_profit).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</td>` +
+      cellMoney(tot.gross_revenue, "", tot.units) + cellMoney(tot.refunds_sellable, "neg", tot.units) + cellMoney(tot.net_sales, "", tot.units) +
+      cellMoney(-Math.abs(tot.gross_cogs), "neg", tot.units) + cellMoney(tot.cogs_reversed_sellable, "", tot.units) + cellMoney(-Math.abs(tot.cogs), "neg", tot.units) +
+      cellMoney(tot.gross_margin_new, "", tot.units) + cellPct(totMargin) +
+      cellMoney(tot.refunds_non_sellable, "neg", tot.units) +
+      cellMoney(tot.amazon_fees, "", tot.units) + cellMoney(tot.ad_alloc, "", tot.units) +
+      cellMoney(tot.net_profit, "ytd" + (tot.net_profit < 0 ? " neg" : ""), tot.units) +
       cellPct(totNetMargin);
     tbody.appendChild(totRow);
   }
 
   const filterBarEl = document.getElementById("profitFilterBar");
   const periods = monthKeys.concat(["MTD", "YTD"]);
+  let currentProfitPeriod = "YTD";
   periods.forEach(p => {
     const btn = document.createElement("button");
     btn.className = "filter-btn" + (p === "YTD" ? " active" : "");
@@ -1013,11 +1067,27 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     btn.addEventListener("click", () => {
       filterBarEl.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+      currentProfitPeriod = p;
       renderProfitTable(p);
     });
     filterBarEl.appendChild(btn);
   });
   renderProfitTable("YTD");
+
+  const btnAggregateView = document.getElementById("btnAggregateView");
+  const btnPerUnitView = document.getElementById("btnPerUnitView");
+  const profitUnitLabels = document.querySelectorAll("table.profit-frozen .unit-label");
+  function setProfitViewMode(mode) {
+    profitViewMode = mode;
+    btnAggregateView.classList.toggle("active", mode === "aggregate");
+    btnPerUnitView.classList.toggle("active", mode === "per-unit");
+    profitUnitLabels.forEach(el => {
+      el.textContent = el.textContent.replace(/ \/unit$/, "") + (mode === "per-unit" ? " /unit" : "");
+    });
+    renderProfitTable(currentProfitPeriod);
+  }
+  btnAggregateView.addEventListener("click", () => setProfitViewMode("aggregate"));
+  btnPerUnitView.addEventListener("click", () => setProfitViewMode("per-unit"));
 
   // ---------- COST PER UNIT TABLE ----------
   const costTableEl = document.getElementById("costTableBody");
@@ -1168,23 +1238,6 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   ];
 
   // ---------- INVENTORY TAB ----------
-  const invData = [
-    { sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", az_inv:12, wh_inv:165, total_inv:177, units_sold_ytd:88, avg_daily_sales:0.327, reorder_point:29.4, days_of_cover:541.1, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", az_inv:21, wh_inv:123, total_inv:144, units_sold_ytd:123, avg_daily_sales:0.457, reorder_point:41.2, days_of_cover:314.9, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", az_inv:14, wh_inv:399, total_inv:413, units_sold_ytd:29, avg_daily_sales:0.108, reorder_point:9.7, days_of_cover:3830.9, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"62-0VFC-64SJ", name:"AEROFRY 9L Dual-Zone Air Fryer", az_inv:15, wh_inv:482, total_inv:497, units_sold_ytd:36, avg_daily_sales:0.134, reorder_point:12.0, days_of_cover:3713.7, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", az_inv:5, wh_inv:115, total_inv:120, units_sold_ytd:14, avg_daily_sales:0.052, reorder_point:4.7, days_of_cover:2305.7, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", az_inv:12, wh_inv:271, total_inv:283, units_sold_ytd:16, avg_daily_sales:0.059, reorder_point:5.4, days_of_cover:4757.9, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", az_inv:6, wh_inv:16, total_inv:22, units_sold_ytd:5, avg_daily_sales:0.019, reorder_point:1.7, days_of_cover:1183.6, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", az_inv:10, wh_inv:269, total_inv:279, units_sold_ytd:22, avg_daily_sales:0.082, reorder_point:7.4, days_of_cover:3411.4, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", az_inv:5, wh_inv:362, total_inv:367, units_sold_ytd:8, avg_daily_sales:0.03, reorder_point:2.7, days_of_cover:12340.4, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", az_inv:5, wh_inv:122, total_inv:127, units_sold_ytd:6, avg_daily_sales:0.022, reorder_point:2.0, days_of_cover:5693.8, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", az_inv:5, wh_inv:105, total_inv:110, units_sold_ytd:3, avg_daily_sales:0.011, reorder_point:1.0, days_of_cover:9863.3, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", az_inv:5, wh_inv:31, total_inv:36, units_sold_ytd:1, avg_daily_sales:0.004, reorder_point:0.3, days_of_cover:9684.0, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", az_inv:5, wh_inv:71, total_inv:76, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
-    { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", az_inv:0, wh_inv:53, total_inv:53, units_sold_ytd:0, avg_daily_sales:0.0, reorder_point:0.0, days_of_cover:null, suggested_reorder_qty:0, needs_reorder:false },
-  ];
-
   const invTableEl = document.getElementById("invTableBody");
   invData.forEach(r => {
     const tr = document.createElement("tr");
@@ -1531,6 +1584,26 @@ const steps = [
       <span class="wf-label">${s.label}</span>
     `;
     wfEl.appendChild(col);
+  });
+
+  // ---------- Sticky-column scroll clamp (workaround for a real browser bug) ----------
+  // Tables with multiple `position: sticky` columns (e.g. profit-frozen's 5-wide
+  // frozen zone) can report a scrollWidth several dozen px LARGER than the table's own
+  // actual rendered width (verified: table.offsetWidth 1320 vs table.scrollWidth 1422
+  // on profit-frozen) - the browser reserves extra "phantom" scroll room to guarantee
+  // sticky elements can fully reach their offset. Scrolling INTO that phantom zone
+  // (which a mouse-wheel/scrollbar-drag can reach, since it's within scrollWidth) makes
+  // the LAST sticky column's rendered position drift left and overlap the second-to-
+  // last one - reproduced and confirmed via getBoundingClientRect at max scroll before
+  // this fix. Clamping scrollLeft to the table's true content width (offsetWidth, not
+  // scrollWidth) keeps every sticky column's geometry clean at any scroll position.
+  document.querySelectorAll(".overflow-x").forEach(wrapper => {
+    const t = wrapper.querySelector("table");
+    if (!t) return;
+    wrapper.addEventListener("scroll", () => {
+      const trueMax = t.offsetWidth - wrapper.clientWidth;
+      if (trueMax > 0 && wrapper.scrollLeft > trueMax) wrapper.scrollLeft = trueMax;
+    }, { passive: true });
   });
 
 </script>
