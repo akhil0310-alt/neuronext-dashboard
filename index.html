@@ -293,6 +293,13 @@
   table.profit-frozen th:nth-child(4), table.profit-frozen td:nth-child(4) { width: 66px; left: 366px; }
   table.profit-frozen th:nth-child(5), table.profit-frozen td:nth-child(5) { width: 76px; left: 432px; box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
   table.profit-frozen th:nth-child(-n+5), table.profit-frozen td:nth-child(-n+5) { position: sticky; z-index: 2; background: var(--surface); }
+  /* Headers wrap onto multiple lines instead of overflowing into the next column -
+     with table-layout:fixed, every non-frozen column shares an equal width regardless
+     of its own header's length, so a long label (e.g. "Sellable returns (COGS)", or
+     any label with " /u" appended in per-unit mode) WILL exceed one line's worth of
+     column width; without this override the base fee-table th's nowrap lets that
+     overflow visually bleed into the neighboring header instead of wrapping. */
+  table.profit-frozen th { white-space: normal; line-height: 1.25; vertical-align: bottom; padding-bottom: 6px; }
 
   /* ---------- sku matrix table ---------- */
   table.sku-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
@@ -496,7 +503,7 @@
       <button class="filter-btn" id="btnPerUnitView" type="button">Per unit (AED/unit)</button>
     </div>
     <div class="overflow-x">
-      <table class="fee-table profit-frozen" style="min-width:1320px">
+      <table class="fee-table profit-frozen" style="min-width:1900px">
         <thead>
           <tr>
             <th>SKU</th><th>Total Inv Qty</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
@@ -1073,7 +1080,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     btnAggregateView.classList.toggle("active", mode === "aggregate");
     btnPerUnitView.classList.toggle("active", mode === "per-unit");
     profitUnitLabels.forEach(el => {
-      el.textContent = el.textContent.replace(/ \/unit$/, "") + (mode === "per-unit" ? " /unit" : "");
+      el.textContent = el.textContent.replace(/ \/u$/, "") + (mode === "per-unit" ? " /u" : "");
     });
     renderProfitTable(currentProfitPeriod);
   }
