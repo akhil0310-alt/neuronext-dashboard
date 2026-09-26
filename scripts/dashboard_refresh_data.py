@@ -1124,6 +1124,16 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
             "net_profit": round(net_profit_m, 2),
             "orders": len(agg["orders_by_month"].get(m, set())),
             "units": sum(v["units"] for mv in agg["sku_month"].values() for mm, v in mv.items() if mm == m),
+            # Per-month split of "other_costs" (added 2026-09-26, user-requested) - same
+            # 7 components as cost_breakdown_ytd below, just not summed across the year -
+            # lets the Monthwise Profitability table show this breakdown inline instead
+            # of only as a YTD-only collapsed detail.
+            "cost_breakdown": {
+                "commission": round(commission, 2), "fulfillment": round(fulfillment, 2),
+                "chargebacks": round(chargebacks, 2), "shipcharges": round(shipcharges, 2),
+                "refund_credits": round(refund_credits, 2), "adjustments": round(adjustments, 2),
+                "storage": round(storage_per_month, 2),
+            },
         })
 
     gross_revenue_ytd = sum(r["gross_revenue"] for r in monthly_rows)

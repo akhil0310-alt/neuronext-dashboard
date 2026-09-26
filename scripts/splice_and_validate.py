@@ -77,9 +77,6 @@ def main():
     html, _ = sub_inner(html, r'<table class="fee-table fee-breakdown-table">.*?', read("gen_monthwise_header.html"), "monthwise_thead")
     html, _ = sub_inner(html, r'<table class="fee-table fee-breakdown-table">.*?', read("gen_monthwise_profitability.html"), "monthwise_tbody")
 
-    # ---- Other costs breakdown (data rows only, header never changes) ----
-    html, _ = sub_inner(html, r'"Other costs" breakdown.*?', read("gen_other_costs.html"), "other_costs_tbody")
-
     # ---- Standalone JS consts (each fragment is exactly one const, safe to fully swap) ----
     for const_name, frag_file in [("skuData", "gen_skudata.txt"), ("costTable", "gen_costtable.txt"),
                                    ("costLedgerData", "gen_costledger.txt"),

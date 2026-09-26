@@ -104,10 +104,13 @@ kpi_html = f"""  <section class="kpis">
   </section>"""
 open('gen_kpi_strip.html', 'w', encoding='utf-8').write(kpi_html + "\n")
 
+gen_dt_dubai = gen_dt + datetime.timedelta(hours=4)  # Asia/Dubai is a fixed UTC+4, no DST
+snapshot_month_name = month_label[f"{gen_dt_dubai.month:02d}"]
+snapshot_time_str = f"{gen_dt_dubai.day} {snapshot_month_name} {gen_dt_dubai.year}, {gen_dt_dubai:%H:%M} GST"
 header_html = (
     f'<span class="sub">1 Jan &ndash; {gen_dt.day} {mtd_month_name} {gen_dt.year} &middot; '
     f'Pulled directly from Amazon Selling Partner API</span>\n'
-    f'<!--SNAPSHOT_DATE-->{gen_dt.day} {mtd_month_name} {gen_dt.year}'
+    f'<!--SNAPSHOT_DATE-->{snapshot_time_str}'
 )
 open('gen_header.html', 'w', encoding='utf-8').write(header_html + "\n")
 
@@ -156,22 +159,75 @@ def pct_row(label, numerator_key, denom_key='gross_revenue'):
 
 
 rows = []
-rows.append(row("Gross revenue", "gross_revenue", months, ytd['gross_revenue']))
-rows.append(row("Refunds - sellable returns", "refunds_sellable", months, ytd['refunds_sellable']))
-rows.append(row("Refunds - non-sellable returns", "refunds_non_sellable", months, ytd['refunds_non_sellable']))
-rows.append(row("Net revenue", "net_revenue", months, ytd['net_revenue'], cls_extra="total"))
-rows.append(pct_row("Net revenue % (of gross)", "net_revenue"))
+rows.append(row("Gross sales", "gross_revenue", months, ytd['gross_revenue']))
+rows.append(row("Sellable returns", "refunds_sellable", months, ytd['refunds_sellable']))
+rows.append(row("Net sales", "net_sales", months, ytd['net_sales'], cls_extra="total"))
 
-cogs_tds = [f"<td>COGS</td>", f'<td class="ytd neg">{fmt0(-abs(ytd["cogs"]))}</td>']
+gross_cogs_tds = [f"<td>Gross COGS</td>", f'<td class="ytd neg">{fmt0(-abs(ytd["gross_cogs"]))}</td>']
+for m in months:
+    mm = next((x for x in monthly if x['month'] == m), None)
+    v = -abs(mm['gross_cogs']) if mm else 0.0
+    gross_cogs_tds.append(f'<td class="neg">{fmt0(v)}</td>')
+rows.append(f"          <tr>{''.join(gross_cogs_tds)}</tr>")
+
+rows.append(row("Sellable returns (COGS)", "cogs_reversed_sellable", months, ytd['cogs_reversed_sellable']))
+
+cogs_tds = [f"<td>Net COGS</td>", f'<td class="ytd neg">{fmt0(-abs(ytd["cogs"]))}</td>']
 for m in months:
     mm = next((x for x in monthly if x['month'] == m), None)
     v = -abs(mm['cogs']) if mm else 0.0
     cogs_tds.append(f'<td class="neg">{fmt0(v)}</td>')
 rows.append(f"          <tr>{''.join(cogs_tds)}</tr>")
 
-rows.append(row("Gross margin", "gross_margin", months, ytd['gross_margin'], cls_extra="total"))
-rows.append(pct_row("Gross margin % (of gross)", "gross_margin"))
+# "Gross margin" here = Net sales - Net COGS (deliberately NOT the same as ytd['gross_margin'],
+# which is net_revenue-based and includes non-sellable refunds - see "Damages" row below instead).
+gross_margin_new_ytd = ytd['net_sales'] - ytd['cogs']
+gm_tds = [f"<td>Gross margin</td>", f'<td class="ytd{" neg" if gross_margin_new_ytd < 0 else ""}">{fmt0(gross_margin_new_ytd)}</td>']
+for m in months:
+    mm = next((x for x in monthly if x['month'] == m), None)
+    v = (mm['net_sales'] - mm['cogs']) if mm else 0.0
+    gm_tds.append(f'<td{cls0(v)}>{fmt0(v)}</td>')
+rows.append(f'          <tr class="total">{"".join(gm_tds)}</tr>')
+
+gm_pct_ytd = (gross_margin_new_ytd / ytd['net_sales'] * 100) if ytd['net_sales'] else None
+gm_pct_tds = [f"<td>Gross margin % (of net sales)</td>", f'<td class="ytd">{fmtpct(gm_pct_ytd)}</td>']
+for m in months:
+    mm = next((x for x in monthly if x['month'] == m), None)
+    v = ((mm['net_sales'] - mm['cogs']) / mm['net_sales'] * 100) if (mm and mm['net_sales']) else None
+    gm_pct_tds.append(f"<td>{fmtpct(v)}</td>")
+rows.append(f'          <tr class="pct-row">{"".join(gm_pct_tds)}</tr>')
+
+rows.append(row("Damages (non-sellable returns)", "refunds_non_sellable", months, ytd['refunds_non_sellable']))
 rows.append(row("Other costs (fees, storage, adj.)", "other_costs", months, ytd['other_costs']))
+
+# Other-costs breakdown, inline as indented sub-rows (added 2026-09-26, user-requested -
+# was previously a YTD-only collapsed <details> section below the table; moved inline so
+# it's visible without an extra click, and now genuinely monthly instead of YTD-only).
+cb = d['cost_breakdown_ytd']
+
+
+def cb_sub_row(label, component):
+    ytd_val = cb[component]
+    tds = [f"<td>{label}</td>", f'<td class="ytd{" neg" if ytd_val < 0 else " pos"}">{fmt0(ytd_val)}</td>']
+    for m in months:
+        mm = next((x for x in monthly if x['month'] == m), None)
+        v = mm['cost_breakdown'][component] if mm else 0.0
+        cls = ' class="neg"' if v < 0 else (' class="pos"' if v else '')
+        tds.append(f'<td{cls}>{fmt0(v)}</td>')
+    return f'          <tr class="sub-row">{"".join(tds)}</tr>'
+
+
+rows.append(cb_sub_row("Referral commission", "commission"))
+rows.append(cb_sub_row("FBA fulfillment fees", "fulfillment"))
+rows.append(cb_sub_row("Shipping &amp; COD chargebacks", "chargebacks"))
+rows.append(cb_sub_row("Shipping / payment charges", "shipcharges"))
+rows.append(cb_sub_row("Refund fee credits", "refund_credits"))
+rows.append(cb_sub_row("FBA storage &amp; inbound (prorated evenly across months)", "storage"))
+rows.append(cb_sub_row("Reimbursements / adjustments", "adjustments"))
+
+# profit_before_ads is unchanged from its existing definition - it already equals
+# gross_margin_new + other_costs + refunds_non_sellable algebraically, so it's still
+# the correct subtotal here even though the path to it is now shown differently above.
 rows.append(row("Profit before advertising", "profit_before_ads", months, ytd['profit_before_ads'], cls_extra="total"))
 rows.append(pct_row("Profit before ads % (of gross)", "profit_before_ads"))
 rows.append(row("Advertising spend", "ad_spend", months, ytd['ad_spend']))
@@ -181,32 +237,8 @@ rows.append(pct_row("Net profit % (of gross)", "net_profit"))
 mwp_html = "\n".join(rows)
 open('gen_monthwise_profitability.html', 'w', encoding='utf-8').write(mwp_html + "\n")
 
-# ================= OTHER COSTS BREAKDOWN =================
-cb = d['cost_breakdown_ytd']
-gross = ytd['gross_revenue']
-
-
-def cb_row(label, val):
-    pct = val / gross * 100 if gross else None
-    cls = ' class="neg"' if val < 0 else ' class="pos"'
-    return f"          <tr><td>{label}</td><td{cls}>{fmt0(val)}</td><td>{fmtpct(pct)}</td></tr>"
-
-
-other_rows = [
-    cb_row("Referral commission", cb['commission']),
-    cb_row("FBA fulfillment fees", cb['fulfillment']),
-    cb_row("Shipping &amp; COD chargebacks", cb['chargebacks']),
-    cb_row("Shipping / payment charges", cb['shipcharges']),
-    cb_row("Refund fee credits", cb['refund_credits']),
-    cb_row("FBA storage &amp; inbound (prorated evenly across months — Amazon doesn't date-stamp this per shipment)", cb['storage']),
-    cb_row("Reimbursements / adjustments", cb['adjustments']),
-]
-total_other = sum(cb.values())
-total_pct = total_other / gross * 100 if gross else None
-other_rows.append(
-    f'          <tr><td><b>Total other costs</b></td><td class="neg"><b>{fmt0(total_other)}</b></td><td><b>{fmtpct(total_pct)}</b></td></tr>'
-)
-open('gen_other_costs.html', 'w', encoding='utf-8').write("\n".join(other_rows) + "\n")
+# Other-costs breakdown is now inline in the Monthwise Profitability table above
+# (see cb_sub_row) - no longer a separate YTD-only collapsed section/fragment.
 
 # ================= SKU x MONTH REVENUE MATRIX =================
 sku_rows_sorted = d['sku_rows']  # already sorted by -gross_revenue
@@ -243,6 +275,6 @@ for r in sku_rows_sorted:
 open('gen_sku_matrix.html', 'w', encoding='utf-8').write("\n".join(matrix_rows) + "\n")
 
 print("HTML fragments generated:")
-for fn in ["gen_kpi_strip.html", "gen_monthwise_profitability.html", "gen_other_costs.html",
+for fn in ["gen_kpi_strip.html", "gen_monthwise_profitability.html",
            "gen_sku_matrix.html", "gen_header.html", "gen_sku_header.html", "gen_monthwise_header.html"]:
     print(" -", fn)
