@@ -88,6 +88,12 @@
   .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); flex: none; }
   .conn b { color: var(--ink); font-weight: 600; }
   .conn-block { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .year-picker { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .year-picker select {
+    font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border-strong); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+    box-shadow: var(--shadow-card);
+  }
   /* ---------- section labels ---------- */
   .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .section-title { font-size: 15px; font-weight: 700; letter-spacing: -0.005em; }
@@ -372,9 +378,12 @@
       <span class="sub">1 Jan &ndash; 2 Oct 2026 &middot; Pulled directly from Amazon Selling Partner API</span>
     </div>
     <div class="conn-block">
+      <label class="year-picker" for="yearSelect">Year
+        <select id="yearSelect"></select>
+      </label>
       <div class="conn">
         <span class="dot"></span>
-        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>2 Oct 2026, 14:40 GST</b></span>
+        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>2 Oct 2026, 14:53 GST</b></span>
       </div>
     </div>
   </header>
@@ -831,6 +840,28 @@ const ytdBar = { m: "YTD", revenue: 92073.31, profitBefore: 21213.48, profit: -8
 const monthKeys = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10"];
 const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 2026","2026-04":"Apr 2026","2026-05":"May 2026","2026-06":"Jun 2026","2026-07":"Jul 2026","2026-08":"Aug 2026","2026-09":"Sep 2026","2026-10":"Oct 2026"};
 
+  // ---------- YEAR PICKER ----------
+  // The live year is this page (index.html, refreshed daily); each closed year is its own
+  // static page built once by scripts/build_year_page.py. At a year rollover, add the
+  // just-closed year here and build its page - the live page moves to the new year by itself.
+  const YEAR_PAGES = { "2026": "./", "2025": "2025.html" };
+  const LIVE_YEAR = Object.keys(YEAR_PAGES).find(y => YEAR_PAGES[y] === "./");
+  const PAGE_YEAR = monthKeys[0].slice(0, 4);
+  const yearSelectEl = document.getElementById("yearSelect");
+  Object.keys(YEAR_PAGES).sort().reverse().forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y === LIVE_YEAR ? `${y} (YTD)` : y;
+    yearSelectEl.appendChild(opt);
+  });
+  yearSelectEl.value = PAGE_YEAR;
+  yearSelectEl.addEventListener("change", () => { location.href = YEAR_PAGES[yearSelectEl.value]; });
+  // Inventory / Inventory Costing are current-stock views, not a per-year concept - only
+  // the live year's page shows them.
+  if (PAGE_YEAR !== LIVE_YEAR) {
+    ["tabBtnInventory", "tabBtnCostLedger"].forEach(id => { document.getElementById(id).style.display = "none"; });
+  }
+
   const fmt = n => "AED " + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
   // Single shared linear AED scale spanning the largest positive value (revenue)
@@ -1126,7 +1157,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     { sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", current_wac_aed:103.22, last_batch_date:"2026-09-04", days_since_last_batch:28, batches:[{date:"2026-01-01",qty:47,landed_cost_aed:79.74,running_qty:47,running_wac_aed:79.74,note:""},{date:"2026-09-04",qty:80,landed_cost_aed:117.02,running_qty:127,running_wac_aed:103.22,note:"UK batch 04-Sep-2026: product cost $17.90/unit (same as UAE) + UK import (freight 10% of cost -> CIF -> duty 2% of CIF -> VAT 20% of CIF+duty) + export-leg (duty 5% of cost, VAT 5% of cost+duty, from the AED 23,132 UK->UAE invoice) + freight AED 21.75/unit (this SKU's 4.8% share of total UK-batch cost value, applied to the pooled freight pot: AED 23,132 invoice minus its own duty/VAT, PLUS GBP 4,818 -> USD 6,511 @ 1.3514 - together AED 35,917 (33.1% of total UK-batch cost value) = landed cost AED 117.02/unit"}] },
     { sku:"RH188SBPZ", name:"Birth Manual Pump RH188", current_wac_aed:15.47, last_batch_date:"2026-09-04", days_since_last_batch:28, batches:[{date:"2026-01-01",qty:15,landed_cost_aed:11.05,running_qty:15,running_wac_aed:11.05,note:""},{date:"2026-09-04",qty:90,landed_cost_aed:16.21,running_qty:105,running_wac_aed:15.47,note:"UK batch 04-Sep-2026: product cost $2.48/unit (same as UAE) + UK import (freight 10% of cost -> CIF -> duty 2% of CIF -> VAT 20% of CIF+duty) + export-leg (duty 5% of cost, VAT 5% of cost+duty, from the AED 23,132 UK->UAE invoice) + freight AED 3.01/unit (this SKU's 0.8% share of total UK-batch cost value, applied to the pooled freight pot: AED 23,132 invoice minus its own duty/VAT, PLUS GBP 4,818 -> USD 6,511 @ 1.3514 - together AED 35,917 (33.1% of total UK-batch cost value) = landed cost AED 16.21/unit"}] },
     { sku:"RH218SBPZ", name:"Birth Electric Pump RH218", current_wac_aed:31.84, last_batch_date:"2026-01-01", days_since_last_batch:274, batches:[{date:"2026-01-01",qty:31,landed_cost_aed:31.84,running_qty:31,running_wac_aed:31.84,note:""}] },
-    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", current_wac_aed:null, last_batch_date:"2026-01-01", days_since_last_batch:274, batches:[{date:"2026-01-01",qty:0,landed_cost_aed:172.77,running_qty:0,running_wac_aed:null,note:""}] },
+    { sku:"VG-HNBC-EKIS", name:"Airfryer 10L", current_wac_aed:172.77, last_batch_date:"2026-01-01", days_since_last_batch:274, batches:[{date:"2026-01-01",qty:0,landed_cost_aed:172.77,running_qty:0,running_wac_aed:null,note:""}] },
     { sku:"RH1008BSZ", name:"Birth Bottle Sterilizer RH1008", current_wac_aed:119.55, last_batch_date:"2026-09-04", days_since_last_batch:28, batches:[{date:"2026-01-01",qty:0,landed_cost_aed:81.46,running_qty:0,running_wac_aed:null,note:""},{date:"2026-09-04",qty:71,landed_cost_aed:119.55,running_qty:71,running_wac_aed:119.55,note:"UK batch 04-Sep-2026: product cost $18.29/unit (same as UAE) + UK import (freight 10% of cost -> CIF -> duty 2% of CIF -> VAT 20% of CIF+duty) + export-leg (duty 5% of cost, VAT 5% of cost+duty, from the AED 23,132 UK->UAE invoice) + freight AED 22.22/unit (this SKU's 4.4% share of total UK-batch cost value, applied to the pooled freight pot: AED 23,132 invoice minus its own duty/VAT, PLUS GBP 4,818 -> USD 6,511 @ 1.3514 - together AED 35,917 (33.1% of total UK-batch cost value) = landed cost AED 119.55/unit"}] },
     { sku:"RH228DBPZ", name:"Birth Electric Pump RH228", current_wac_aed:54.07, last_batch_date:"2026-09-04", days_since_last_batch:28, batches:[{date:"2026-01-01",qty:5,landed_cost_aed:37.99,running_qty:5,running_wac_aed:37.99,note:""},{date:"2026-09-04",qty:48,landed_cost_aed:55.75,running_qty:53,running_wac_aed:54.07,note:"UK batch 04-Sep-2026: product cost $8.53/unit (same as UAE) + UK import (freight 10% of cost -> CIF -> duty 2% of CIF -> VAT 20% of CIF+duty) + export-leg (duty 5% of cost, VAT 5% of cost+duty, from the AED 23,132 UK->UAE invoice) + freight AED 10.36/unit (this SKU's 1.4% share of total UK-batch cost value, applied to the pooled freight pot: AED 23,132 invoice minus its own duty/VAT, PLUS GBP 4,818 -> USD 6,511 @ 1.3514 - together AED 35,917 (33.1% of total UK-batch cost value) = landed cost AED 55.75/unit"}] },
   ];
@@ -1344,7 +1375,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
   const removalOrdersData = [
     { date:"2026-09-25", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-09-22", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Pending", disposition:"Unsellable", requested_qty:1, shipped_qty:0, in_process_qty:1, cancelled_qty:0 },
-    { date:"2026-09-19", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-09-18", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-09-11", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-09-05", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:8, shipped_qty:8, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-09-05", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
@@ -1358,7 +1389,7 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     { date:"2026-08-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-07-22", sku:"PY-51U9-NDO7", name:"BIRTH Double Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-07-22", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
-    { date:"2026-07-12", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-07-11", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-07-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-07-07", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-06-26", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
@@ -1374,14 +1405,14 @@ const monthLabels = {"2026-01":"Jan 2026","2026-02":"Feb 2026","2026-03":"Mar 20
     { date:"2026-05-16", sku:"D4-2UK7-AM2Z", name:"BIRTH Single Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-05-07", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:3, shipped_qty:3, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-05-07", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:1, in_process_qty:0, cancelled_qty:1 },
-    { date:"2026-04-30", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:14, shipped_qty:14, in_process_qty:0, cancelled_qty:0 },
-    { date:"2026-04-30", sku:"RH188SBPZ", name:"Birth Manual Pump RH188", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
-    { date:"2026-04-30", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-29", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:14, shipped_qty:14, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-29", sku:"RH188SBPZ", name:"Birth Manual Pump RH188", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-04-29", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-04-22", sku:"2D-JIOC-DYZ2", name:"LITTLE MOMMY Single Breast Pump", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-03-05", sku:"7J-5E02-AAAN", name:"BIRTH Bluetooth Double Pump S39", source:"Manual", is_aged:false, status:"Completed", disposition:"Sellable", requested_qty:16, shipped_qty:1, in_process_qty:0, cancelled_qty:15 },
-    { date:"2026-02-26", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:4, shipped_qty:4, in_process_qty:0, cancelled_qty:0 },
-    { date:"2026-02-26", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
-    { date:"2026-02-26", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:9, shipped_qty:8, in_process_qty:0, cancelled_qty:1 },
+    { date:"2026-02-25", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:4, shipped_qty:4, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-25", sku:"S39DBPDB", name:"LITTLE MOMMY Double Breast Pump", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
+    { date:"2026-02-25", sku:"AEROSC-6", name:"Aerofry 5.7L Smart Scale Fryer", source:"Aged (Amazon-initiated)", is_aged:true, status:"Completed", disposition:"Sellable", requested_qty:9, shipped_qty:8, in_process_qty:0, cancelled_qty:1 },
     { date:"2026-02-21", sku:"LN-WRP7-RIMK", name:"BIRTH Single Breast Pump S39", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-02-21", sku:"NR-O1LQ-E1UK", name:"BIRTH Double Breast Pump S12A", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:1, shipped_qty:1, in_process_qty:0, cancelled_qty:0 },
     { date:"2026-02-21", sku:"TJ-FDH7-PNAI", name:"AEROFRY Air Fryer 6L", source:"Unfulfillable (auto)", is_aged:false, status:"Completed", disposition:"Unsellable", requested_qty:2, shipped_qty:2, in_process_qty:0, cancelled_qty:0 },
