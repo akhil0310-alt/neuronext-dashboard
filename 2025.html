@@ -1,4 +1,4 @@
-<title>NeuroNext — Amazon Performance</title>
+<title>NeuroNext — Performance Dashboard</title>
 <style>
   :root {
     --page: #F0F2F4;
@@ -367,6 +367,45 @@
   @media (max-width: 920px) {
     .scope-grid { grid-template-columns: 1fr; }
   }
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  /* CHANNEL_CSS_START */
+  /* ---------- CHANNEL SWITCHER (Amazon / Noon / Overall) ---------- */
+  .channel-nav { display: flex; gap: 6px; margin-bottom: 4px; }
+  .channel-nav-btn {
+    font: inherit; font-size: 13.5px; font-weight: 800; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px;
+    padding: 10px 20px; cursor: pointer; transition: background .12s ease, color .12s ease;
+    box-shadow: var(--shadow-card);
+  }
+  .channel-nav-btn:hover { background: var(--border-strong); }
+  .channel-nav-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .channel-panel { display: none; flex-direction: column; gap: 22px; }
+  .channel-panel.active { display: flex; }
+  .channel-note { font-size: 12px; color: var(--ink-muted); background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+  /* Noon/Overall Product-wise Profitability: 4 frozen leading columns (SKU/Qty/ASP/
+     Cost-per-unit) - same pattern as the Amazon tab's .profit-frozen, just one column
+     fewer (no Total Inv Qty), so the width/left offsets differ. */
+  table.profit-frozen-4 { table-layout: fixed; }
+  table.profit-frozen-4 th:nth-child(1), table.profit-frozen-4 td:nth-child(1) { width: 210px; left: 0; text-align: left; padding-left: 0; color: var(--ink); font-weight: 500; overflow: hidden; text-overflow: ellipsis; box-shadow: none; }
+  table.profit-frozen-4 th:nth-child(2), table.profit-frozen-4 td:nth-child(2) { width: 66px; left: 210px; box-shadow: none; }
+  table.profit-frozen-4 th:nth-child(3), table.profit-frozen-4 td:nth-child(3) { width: 66px; left: 276px; box-shadow: none; }
+  table.profit-frozen-4 th:nth-child(4), table.profit-frozen-4 td:nth-child(4) { width: 76px; left: 342px; box-shadow: 2px 0 4px -2px rgba(15,23,42,0.15); }
+  table.profit-frozen-4 th:nth-child(-n+4), table.profit-frozen-4 td:nth-child(-n+4) { position: sticky; z-index: 2; background: var(--surface); }
+  table.profit-frozen-4 th { white-space: normal; line-height: 1.25; vertical-align: bottom; padding-bottom: 6px; }
+  /* CHANNEL_CSS_END */
 </style>
 
 <div class="wrap">
@@ -374,8 +413,8 @@
   <header class="top">
     <div class="brand-block">
       <span class="eyebrow">NeuroNext FZ-LLC</span>
-      <h1>Amazon Performance Dashboard</h1>
-      <span class="sub">1 Jan &ndash; 31 Dec 2025 &middot; Pulled directly from Amazon Selling Partner API</span>
+      <h1>Performance Dashboard</h1>
+      <span class="sub">1 Jan &ndash; 31 Dec 2025 &middot; Pulled directly from Amazon Selling Partner API and Noon Partner API</span>
     </div>
     <div class="conn-block">
       <label class="year-picker" for="yearSelect">Year
@@ -383,11 +422,48 @@
       </label>
       <div class="conn">
         <span class="dot"></span>
-        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>3 Oct 2026, 10:02 GST</b></span>
+        <span>Connected to <b>Amazon</b> (SP-API) &amp; <b>Noon</b> (Partner API) · snapshot taken <b>3 Oct 2026, 10:02 GST</b></span>
       </div>
     </div>
   </header>
 
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  <!-- CHANNEL_NAV_START -->
+  <nav class="channel-nav">
+    <button class="channel-nav-btn active" id="channelBtnOverall" type="button">Overall</button>
+    <button class="channel-nav-btn" id="channelBtnAmazon" type="button">Amazon</button>
+    <button class="channel-nav-btn" id="channelBtnNoon" type="button">Noon</button>
+  </nav>
+  <!-- CHANNEL_NAV_END -->
+  <div id="channelAmazon" class="channel-panel">
   <nav class="tab-nav">
     <button class="tab-nav-btn active" id="tabBtnPnl" type="button">PNL</button>
     <button class="tab-nav-btn" id="tabBtnInventory" type="button">Inventory</button>
@@ -797,6 +873,231 @@
     </section>
   </div>
 
+  </div> <!-- /channelAmazon -->
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  <!-- CHANNEL_NOON_OVERALL_START -->
+  <div class="channel-panel" id="channelNoon">
+    <nav class="tab-nav">
+      <button class="tab-nav-btn active" id="noonTabBtnPnl" type="button">PNL</button>
+      <button class="tab-nav-btn" id="noonTabBtnInventory" type="button">Inventory</button>
+    </nav>
+    <div class="tab-panel active" id="noonTabPnl">
+      <section class="kpis" id="noonKpis"></section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Monthly revenue, profit before ads &amp; net profit</span>
+          <span class="section-note">AED &middot; from Noon's finance/transaction export</span>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Gross revenue</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Profit before ads</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--good)"></span>Net profit (positive)</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--critical)"></span>Net profit (loss)</span>
+        </div>
+        <div class="trend-chart" id="noonTrendChart"></div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Where the revenue goes</span>
+          <span class="section-note">Gross revenue &rarr; net proceeds (fees/ads only, excludes COGS), YTD</span>
+        </div>
+        <div class="waterfall" id="noonWaterfall"></div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Noon Monthwise Profitability</span>
+          <span class="section-note">AED, monthly with YTD total &mdash; from Noon's finance/transaction export. "Other fees" is broken down into its components below (indented): referral fee, fulfillment &amp; logistics fee, shipping credits, other order fees, order/non-order subsidies, and other adjustments. COGS reuses the exact same landed-cost figures as the Amazon tab (same physical product, same NEXTWAVE invoices) via the confirmed Noon&harr;Amazon SKU mapping. Advertising Fee is Noon's own ad-spend line, real not allocated.</span>
+        </div>
+        <div class="overflow-x">
+          <table class="fee-table">
+            <thead><tr id="noonMonthlyHeaderRow"><th>Line item</th><th class="ytd">YTD Total</th></tr></thead>
+            <tbody id="noonMonthlyBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Revenue by SKU</span>
+          <span class="section-note">Units / AED revenue by month, YTD</span>
+        </div>
+        <div class="mom-key">
+          <span><span class="mom-swatch" style="background:var(--good-soft)"></span>Up vs. prior month</span>
+          <span><span class="mom-swatch" style="background:var(--critical-soft)"></span>Down vs. prior month</span>
+        </div>
+        <div class="overflow-x">
+          <table class="sku-table channel-sku-matrix">
+            <thead><tr id="noonSkuMatrixHeaderRow"><th>SKU</th></tr></thead>
+            <tbody id="noonSkuMatrixBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Noon product-wise profitability</span>
+          <span class="section-note">AED &mdash; net of refunds (Noon reports none separately - see below). ASP/Cost-per-unit are per-unit; everything else is aggregate for the selected period. COGS uses the exact same landed cost as the Amazon tab for the same physical SKU. Fees (referral + fulfillment) are real per-order-item data. Ad spend is allocated pro-rata by each SKU's share of that period's gross revenue (Noon's export only reports ad spend in aggregate, not per SKU - same limitation Amazon's own ad-allocation column has). Noon's finance export has no sellable/non-sellable return-disposition data the way Amazon's FBA Customer Returns report does, so there's no separate Returns/Damages column here - not an oversight, a real data gap.</span>
+        </div>
+        <div class="filter-bar" id="noonProfitFilterBar"></div>
+        <div class="overflow-x">
+          <table class="fee-table profit-frozen-4" style="min-width:1500px">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
+                <th>Gross revenue</th><th>COGS</th><th>Gross margin</th><th class="pct">Gross margin %</th>
+                <th>Fees</th><th>Ad spend (alloc.)</th>
+                <th class="ytd">Net profit</th><th class="pct">Net margin %</th>
+              </tr>
+            </thead>
+            <tbody id="noonProfitTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Cost per unit &amp; recommended ASP</span>
+          <span class="section-note">Product cost, freight, duty and VAT are IDENTICAL to the Amazon tab's copy of this table (same physical product, same NEXTWAVE invoices, same landed-cost formula - cost doesn't change by sales channel). Only Actual ASP and the margin computed from it are Noon-specific - Noon's own average selling price, not Amazon's.</span>
+        </div>
+        <div class="overflow-x">
+          <table class="fee-table" style="min-width:1080px">
+            <thead><tr><th>SKU</th><th>Product cost (USD)</th><th>Freight (USD)</th><th>Duty (USD)</th><th>VAT (USD)</th><th>Landed cost/unit (USD)</th><th class="ytd">Landed cost/unit (AED)</th><th class="pct">Recommended ASP (60% margin)</th><th class="pct">Actual ASP (Noon)</th><th class="pct">Margin % at actual ASP</th></tr></thead>
+            <tbody id="noonCostTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="tab-panel" id="noonTabInventory">
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Noon inventory</span>
+          <span class="section-note">Noon Inv is stock physically held at Noon's own fulfillment centers (FBN), live from Noon's inventory-ageing export. WH Inv is the SAME shared "Neuronext SOH &amp; Outbound" warehouse figure shown on the Amazon tab &mdash; one shared pool, not a separate Noon warehouse. Only SKUs actually listed on Noon are shown here (most Amazon SKUs aren't listed on Noon at all). Inventory Ageing and Inventory Costing are channel-agnostic &mdash; see the Amazon tab for those (same figures, not duplicated here).</span>
+        </div>
+        <div class="overflow-x">
+          <table class="inv-table">
+            <thead><tr><th>SKU</th><th>Noon Inv</th><th>WH Inv</th><th class="ytd">Total Inv</th><th>Units sold YTD</th><th>Avg daily sales</th><th>Reorder point (90d)</th><th>Days of cover</th><th>Suggested reorder qty</th><th>Status</th></tr></thead>
+            <tbody id="noonInvBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="channel-panel active" id="channelOverall">
+    <nav class="tab-nav">
+      <button class="tab-nav-btn active" id="overallTabBtnPnl" type="button">PNL</button>
+      <button class="tab-nav-btn" id="overallTabBtnInventory" type="button">Inventory</button>
+    </nav>
+    <div class="tab-panel active" id="overallTabPnl">
+      <section class="kpis" id="overallKpis"></section>
+      <div class="channel-note" id="overallInvNote">Inventory Ageing Matrix and Inventory Costing/WAC are channel-agnostic (same landed cost and same shared-warehouse FIFO ageing regardless of which channel sells the unit) &mdash; see the Amazon tab for those figures rather than a duplicate here.</div>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Monthly revenue, profit before ads &amp; net profit (Amazon + Noon)</span>
+          <span class="section-note">AED &middot; combined from both channels' settlement/finance data</span>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Gross revenue</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Profit before ads</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--good)"></span>Net profit (positive)</span>
+          <span class="legend-item"><span class="swatch" style="background:var(--critical)"></span>Net profit (loss)</span>
+        </div>
+        <div class="trend-chart" id="overallTrendChart"></div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Where the revenue goes</span>
+          <span class="section-note">Gross revenue &rarr; net proceeds (Amazon fees/refunds + Noon fees + ads, excludes COGS), YTD</span>
+        </div>
+        <div class="waterfall" id="overallWaterfall"></div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Overall Monthwise Profitability (Amazon + Noon)</span>
+          <span class="section-note">AED, monthly with YTD total. Gross revenue/COGS/ad spend/net profit are simple sums of the Amazon and Noon tabs. "Other costs" is shown per-channel rather than force-merged into one schema &mdash; Amazon's and Noon's fee/refund data aren't structured the same way (e.g. Noon's finance export has no sellable/non-sellable refund-disposition split the way Amazon's FBA Customer Returns report does), so combining them into one breakdown would fabricate detail neither channel actually reports.</span>
+        </div>
+        <div class="overflow-x">
+          <table class="fee-table">
+            <thead><tr id="overallMonthlyHeaderRow"><th>Line item</th><th class="ytd">YTD Total</th></tr></thead>
+            <tbody id="overallMonthlyBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Revenue by SKU (Amazon + Noon)</span>
+          <span class="section-note">Units / AED revenue by month, YTD &mdash; combined by physical SKU via the confirmed Noon&harr;Amazon SKU mapping</span>
+        </div>
+        <div class="mom-key">
+          <span><span class="mom-swatch" style="background:var(--good-soft)"></span>Up vs. prior month</span>
+          <span><span class="mom-swatch" style="background:var(--critical-soft)"></span>Down vs. prior month</span>
+        </div>
+        <div class="overflow-x">
+          <table class="sku-table channel-sku-matrix">
+            <thead><tr id="overallSkuMatrixHeaderRow"><th>SKU</th></tr></thead>
+            <tbody id="overallSkuMatrixBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Overall product-wise profitability (Amazon + Noon)</span>
+          <span class="section-note">AED, combined by physical SKU. Two SKUs here (RH1008BSZ, RH228DBPZ) have real 2026 Noon sales but zero Amazon sales YTD &mdash; they appear only because of Noon. COGS is the same landed cost regardless of channel. Fees = Amazon's (commission+fulfillment+storage) + Noon's (referral+fulfillment) combined. Ad spend is each channel's own allocation, summed.</span>
+        </div>
+        <div class="filter-bar" id="overallProfitFilterBar"></div>
+        <div class="overflow-x">
+          <table class="fee-table profit-frozen-4" style="min-width:1500px">
+            <thead>
+              <tr>
+                <th>SKU</th><th>Qty sold</th><th>ASP</th><th>Cost/unit</th>
+                <th>Gross revenue</th><th>COGS</th><th>Gross margin</th><th class="pct">Gross margin %</th>
+                <th>Fees</th><th>Ad spend (alloc.)</th>
+                <th class="ytd">Net profit</th><th class="pct">Net margin %</th>
+              </tr>
+            </thead>
+            <tbody id="overallProfitTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Cost per unit &amp; recommended ASP</span>
+          <span class="section-note">Product cost, freight, duty and VAT are IDENTICAL to the Amazon tab's copy of this table (cost doesn't change by sales channel). Actual ASP here is blended across BOTH channels (combined revenue &divide; combined units), unlike the Amazon and Noon tabs' own copies which each show that one channel's ASP.</span>
+        </div>
+        <div class="overflow-x">
+          <table class="fee-table" style="min-width:1080px">
+            <thead><tr><th>SKU</th><th>Product cost (USD)</th><th>Freight (USD)</th><th>Duty (USD)</th><th>VAT (USD)</th><th>Landed cost/unit (USD)</th><th class="ytd">Landed cost/unit (AED)</th><th class="pct">Recommended ASP (60% margin)</th><th class="pct">Actual ASP (blended)</th><th class="pct">Margin % at actual ASP</th></tr></thead>
+            <tbody id="overallCostTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <div class="tab-panel" id="overallTabInventory">
+      <section class="card">
+        <div class="section-head">
+          <span class="section-title">Overall inventory (AZ + Noon + Warehouse)</span>
+          <span class="section-note">All three physical stock pools added together: Amazon FBA (AZ Inv), Noon FBN (Noon Inv), and NeuroNext's own warehouse (WH Inv, shared between both channels).</span>
+        </div>
+        <div class="overflow-x">
+          <table class="inv-table">
+            <thead><tr><th>SKU</th><th>AZ Inv</th><th>Noon Inv</th><th>WH Inv</th><th class="ytd">Total Inv</th><th>Units sold YTD</th><th>Avg daily sales</th><th>Reorder point (90d)</th><th>Days of cover</th><th>Suggested reorder qty</th><th>Status</th></tr></thead>
+            <tbody id="overallInvBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+  <!-- CHANNEL_NOON_OVERALL_END -->
+  <!-- CHANNEL_NOON_OVERALL_ANCHOR -->
+
   <footer>
     <span>Source: Amazon Selling Partner API (eu endpoint), marketplace A2VIGQ35RCS4UG · seller-reported figures, not independently audited</span>
     <span>Built for NeuroNext FZ-LLC</span>
@@ -858,9 +1159,14 @@ const monthLabels = {"2025-01":"Jan 2025","2025-02":"Feb 2025","2025-03":"Mar 20
   yearSelectEl.value = PAGE_YEAR;
   yearSelectEl.addEventListener("change", () => { location.href = YEAR_PAGES[yearSelectEl.value]; });
   // Inventory / Inventory Costing are current-stock views, not a per-year concept - only
-  // the live year's page shows them.
+  // the live year's page shows them. Noon's and Overall's own Inventory sub-tabs are the
+  // same kind of current-stock view (added 2026-10-04, same reasoning extended to the
+  // Channel switcher) - hidden on closed-year pages for the same reason.
   if (PAGE_YEAR !== LIVE_YEAR) {
-    ["tabBtnInventory", "tabBtnCostLedger"].forEach(id => { document.getElementById(id).style.display = "none"; });
+    // overallInvNote points to "see the Amazon tab" for Costing/Ageing - misleading once
+    // Amazon's own Inventory/Costing tabs are ALSO hidden here, so it's hidden too.
+    ["tabBtnInventory", "tabBtnCostLedger", "noonTabBtnInventory", "overallTabBtnInventory", "overallInvNote"]
+      .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; });
   }
 
   const fmt = n => "AED " + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -1630,5 +1936,509 @@ const steps = [
       if (trueMax > 0 && wrapper.scrollLeft > trueMax) wrapper.scrollLeft = trueMax;
     }, { passive: true });
   });
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  
+
+
+  /* CHANNEL_JS_START */
+  const noonData = {"months": ["2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"], "monthly": [{"month": "2025-04", "gross_revenue": 459.0, "net_before_fees": 401.87, "ad_spend": 0, "cogs": 146.51, "cogs_is_estimated": false, "net_profit": 255.36, "orders": 1, "units": 1, "asp": 459.0, "cost_breakdown": {"referral": -48.2, "fulfillment": -8.93, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-05", "gross_revenue": 798.0, "net_before_fees": 696.34, "ad_spend": -1228.52, "cogs": 293.02, "cogs_is_estimated": false, "net_profit": -825.2, "orders": 2, "units": 2, "asp": 399.0, "cost_breakdown": {"referral": -83.8, "fulfillment": -17.86, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-06", "gross_revenue": 399.0, "net_before_fees": 348.17, "ad_spend": 0, "cogs": 146.51, "cogs_is_estimated": false, "net_profit": 201.66, "orders": 1, "units": 1, "asp": 399.0, "cost_breakdown": {"referral": -41.9, "fulfillment": -8.93, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-07", "gross_revenue": 1596.0, "net_before_fees": 1392.68, "ad_spend": 0, "cogs": 586.04, "cogs_is_estimated": false, "net_profit": 806.64, "orders": 4, "units": 4, "asp": 399.0, "cost_breakdown": {"referral": -167.6, "fulfillment": -35.72, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-08", "gross_revenue": 3740.0, "net_before_fees": 3293.67, "ad_spend": -425.92, "cogs": 1465.1, "cogs_is_estimated": false, "net_profit": 1402.65, "orders": 10, "units": 10, "asp": 374.0, "cost_breakdown": {"referral": -392.75, "fulfillment": -53.58, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-09", "gross_revenue": 7717.0, "net_before_fees": 6436.81, "ad_spend": -1029.74, "cogs": 3321.18, "cogs_is_estimated": true, "net_profit": 2085.89, "orders": 24, "units": 24, "asp": 321.54, "cost_breakdown": {"referral": -1025.45, "fulfillment": -254.74, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-10", "gross_revenue": 5634.0, "net_before_fees": 4688.13, "ad_spend": -1130.78, "cogs": 2503.35, "cogs_is_estimated": true, "net_profit": 1054.0, "orders": 18, "units": 18, "asp": 313.0, "cost_breakdown": {"referral": -780.95, "fulfillment": -164.92, "shipping_credits": 0.0, "other_order_fees": 0.0, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-11", "gross_revenue": 6676.1, "net_before_fees": 5392.87, "ad_spend": -1431.86, "cogs": 3244.43, "cogs_is_estimated": false, "net_profit": 716.58, "orders": 29, "units": 29, "asp": 230.21, "cost_breakdown": {"referral": -935.23, "fulfillment": -392.24, "shipping_credits": 0.0, "other_order_fees": 44.24, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}, {"month": "2025-12", "gross_revenue": 5413.0, "net_before_fees": 3961.29, "ad_spend": -1557.08, "cogs": 3113.77, "cogs_is_estimated": true, "net_profit": -709.56, "orders": 38, "units": 38, "asp": 142.45, "cost_breakdown": {"referral": -752.75, "fulfillment": -694.62, "shipping_credits": 0.0, "other_order_fees": -4.34, "order_subsidies": 0.0, "non_order_subsidies": 0.0, "others": 0.0}}], "ytd": {"gross_revenue": 32432.1, "ad_spend": -6803.9, "other_fees": -5820.27, "cogs": 14819.91, "net_profit": 4988.02, "orders": 127, "units": 127, "days_elapsed": 365, "net_proceeds": 19807.93, "revenue_per_day": 88.86, "units_per_day": 0.348}, "sku_rows": [{"partner_sku": "F-901", "amazon_sku": "62-0VFC-64SJ", "title": "Air fryer - 9 Litres, Dual Zone Digital Air fryer, 2 Drawers, Uses No Oil, 8-in-1, Max Crisp, Roast, Bake, Reheat, Dehydrate, Cook, Non-Stick Dishwasher Safe Baskets, 2 Years Warranty 9 L 2400 W F-901 Black", "units": 67, "gross_revenue": 24267.1, "asp": 362.2, "cost_per_unit": 146.51, "cogs": 9816.17, "cogs_is_estimated": false, "referral_fee": -3058.31, "fulfillment_fee": -656.57, "fees": -3714.88, "ad_spend_allocated": -4707.11, "gross_margin": 14450.93, "margin_pct": 59.5, "net_profit": 6028.94, "net_margin_pct": 24.8, "months": {"2025-11": {"units": 15, "gross_revenue": 5019.1, "asp": 334.61, "cost_per_unit": 146.51, "cogs": 2197.65, "cogs_is_estimated": false, "referral_fee": -685.11, "fulfillment_fee": -201.14, "fees": -886.25, "ad_spend_allocated": -1076.47, "gross_margin": 2821.45, "margin_pct": 56.2, "net_profit": 858.73, "net_margin_pct": 17.1}, "2025-10": {"units": 14, "gross_revenue": 5066.0, "asp": 361.86, "cost_per_unit": 146.51, "cogs": 2051.14, "cogs_is_estimated": false, "referral_fee": -691.48, "fulfillment_fee": -125.02, "fees": -816.5, "ad_spend_allocated": -1016.78, "gross_margin": 3014.86, "margin_pct": 59.5, "net_profit": 1181.58, "net_margin_pct": 23.3}, "2025-09": {"units": 20, "gross_revenue": 7190.0, "asp": 359.5, "cost_per_unit": 146.51, "cogs": 2930.2, "cogs_is_estimated": false, "referral_fee": -947.47, "fulfillment_fee": -205.39, "fees": -1152.86, "ad_spend_allocated": -959.42, "gross_margin": 4259.8, "margin_pct": 59.2, "net_profit": 2147.52, "net_margin_pct": 29.9}, "2025-08": {"units": 10, "gross_revenue": 3740.0, "asp": 374.0, "cost_per_unit": 146.51, "cogs": 1465.1, "cogs_is_estimated": false, "referral_fee": -392.75, "fulfillment_fee": -53.58, "fees": -446.33, "ad_spend_allocated": -425.92, "gross_margin": 2274.9, "margin_pct": 60.8, "net_profit": 1402.65, "net_margin_pct": 37.5}, "2025-07": {"units": 4, "gross_revenue": 1596.0, "asp": 399.0, "cost_per_unit": 146.51, "cogs": 586.04, "cogs_is_estimated": false, "referral_fee": -167.6, "fulfillment_fee": -35.72, "fees": -203.32, "ad_spend_allocated": 0.0, "gross_margin": 1009.96, "margin_pct": 63.3, "net_profit": 806.64, "net_margin_pct": 50.5}, "2025-06": {"units": 1, "gross_revenue": 399.0, "asp": 399.0, "cost_per_unit": 146.51, "cogs": 146.51, "cogs_is_estimated": false, "referral_fee": -41.9, "fulfillment_fee": -8.93, "fees": -50.83, "ad_spend_allocated": 0.0, "gross_margin": 252.49, "margin_pct": 63.3, "net_profit": 201.66, "net_margin_pct": 50.5}, "2025-05": {"units": 2, "gross_revenue": 798.0, "asp": 399.0, "cost_per_unit": 146.51, "cogs": 293.02, "cogs_is_estimated": false, "referral_fee": -83.8, "fulfillment_fee": -17.86, "fees": -101.66, "ad_spend_allocated": -1228.52, "gross_margin": 504.98, "margin_pct": 63.3, "net_profit": -825.2, "net_margin_pct": -103.4}, "2025-04": {"units": 1, "gross_revenue": 459.0, "asp": 459.0, "cost_per_unit": 146.51, "cogs": 146.51, "cogs_is_estimated": false, "referral_fee": -48.2, "fulfillment_fee": -8.93, "fees": -57.13, "ad_spend_allocated": 0.0, "gross_margin": 312.49, "margin_pct": 68.1, "net_profit": 255.36, "net_margin_pct": 55.6}}}, {"partner_sku": "KDF-681D", "amazon_sku": "TJ-FDH7-PNAI", "title": "Panoramic Glass View Digital Air Fryer - 6L, Large Capacity, Multi Functions with 360\u00b0 High Speed Air Technology 6 L 1600 W KDF-681D black", "units": 26, "gross_revenue": 4274.0, "asp": 164.38, "cost_per_unit": 95.76, "cogs": 2489.76, "cogs_is_estimated": false, "referral_fee": -561.62, "fulfillment_fee": -498.75, "fees": -1060.37, "ad_spend_allocated": -1154.74, "gross_margin": 1784.24, "margin_pct": 41.7, "net_profit": -430.87, "net_margin_pct": -10.1, "months": {"2025-12": {"units": 22, "gross_revenue": 3518.0, "asp": 159.91, "cost_per_unit": 95.76, "cogs": 2106.72, "cogs_is_estimated": false, "referral_fee": -458.44, "fulfillment_fee": -418.95, "fees": -877.39, "ad_spend_allocated": -1011.97, "gross_margin": 1411.28, "margin_pct": 40.1, "net_profit": -478.08, "net_margin_pct": -13.6}, "2025-11": {"units": 3, "gross_revenue": 517.0, "asp": 172.33, "cost_per_unit": 95.76, "cogs": 287.28, "cogs_is_estimated": false, "referral_fee": -70.56, "fulfillment_fee": -59.85, "fees": -130.41, "ad_spend_allocated": -110.88, "gross_margin": 229.72, "margin_pct": 44.4, "net_profit": -11.57, "net_margin_pct": -2.2}, "2025-09": {"units": 1, "gross_revenue": 239.0, "asp": 239.0, "cost_per_unit": 95.76, "cogs": 95.76, "cogs_is_estimated": false, "referral_fee": -32.62, "fulfillment_fee": -19.95, "fees": -52.57, "ad_spend_allocated": -31.89, "gross_margin": 143.24, "margin_pct": 59.9, "net_profit": 58.78, "net_margin_pct": 24.6}}}, {"partner_sku": "RH1008", "amazon_sku": "RH1008BSZ", "title": "Birth - Electric Bottle Sterilizer RH-1008; 6-in-1 Steam Sterilizer with LCD Display, Auto Shut-Off, BPA-Free, Fits 6 Bottles; Fast Sterilization for Baby Bottles", "units": 11, "gross_revenue": 1200.0, "asp": 109.09, "cost_per_unit": 81.46, "cogs": 896.06, "cogs_is_estimated": false, "referral_fee": -189.01, "fulfillment_fee": -138.6, "fees": -327.61, "ad_spend_allocated": -284.96, "gross_margin": 303.94, "margin_pct": 25.3, "net_profit": -308.63, "net_margin_pct": -25.7, "months": {"2025-12": {"units": 3, "gross_revenue": 377.0, "asp": 125.67, "cost_per_unit": 81.46, "cogs": 244.38, "cogs_is_estimated": false, "referral_fee": -59.38, "fulfillment_fee": -37.8, "fees": -97.18, "ad_spend_allocated": -108.45, "gross_margin": 132.62, "margin_pct": 35.2, "net_profit": -73.01, "net_margin_pct": -19.4}, "2025-11": {"units": 8, "gross_revenue": 823.0, "asp": 102.88, "cost_per_unit": 81.46, "cogs": 651.68, "cogs_is_estimated": false, "referral_fee": -129.63, "fulfillment_fee": -100.8, "fees": -230.43, "ad_spend_allocated": -176.51, "gross_margin": 171.32, "margin_pct": 20.8, "net_profit": -235.62, "net_margin_pct": -28.6}}}, {"partner_sku": "RH228", "amazon_sku": "RH228DBPZ", "title": "Birth - Portable, Hands-Free, Electric Breastfeeding Pump with 4 Suction Levels \u2013 Quiet, Pain-Free, USB Charging, LCD Display \u2013 BPA-Free & Easy to Clean RH228", "units": 10, "gross_revenue": 1172.0, "asp": 117.2, "cost_per_unit": 37.99, "cogs": 379.9, "cogs_is_estimated": false, "referral_fee": -184.61, "fulfillment_fee": -105.0, "fees": -289.61, "ad_spend_allocated": -284.41, "gross_margin": 792.1, "margin_pct": 67.6, "net_profit": 218.08, "net_margin_pct": 18.6, "months": {"2025-12": {"units": 6, "gross_revenue": 654.0, "asp": 109.0, "cost_per_unit": 37.99, "cogs": 227.94, "cogs_is_estimated": false, "referral_fee": -103.02, "fulfillment_fee": -63.0, "fees": -166.02, "ad_spend_allocated": -188.13, "gross_margin": 426.06, "margin_pct": 65.1, "net_profit": 71.91, "net_margin_pct": 11.0}, "2025-11": {"units": 2, "gross_revenue": 218.0, "asp": 109.0, "cost_per_unit": 37.99, "cogs": 75.98, "cogs_is_estimated": false, "referral_fee": -34.34, "fulfillment_fee": -21.0, "fees": -55.34, "ad_spend_allocated": -46.76, "gross_margin": 142.02, "margin_pct": 65.1, "net_profit": 39.92, "net_margin_pct": 18.3}, "2025-10": {"units": 1, "gross_revenue": 141.0, "asp": 141.0, "cost_per_unit": 37.99, "cogs": 37.99, "cogs_is_estimated": false, "referral_fee": -22.21, "fulfillment_fee": -10.5, "fees": -32.71, "ad_spend_allocated": -28.3, "gross_margin": 103.01, "margin_pct": 73.1, "net_profit": 42.0, "net_margin_pct": 29.8}, "2025-09": {"units": 1, "gross_revenue": 159.0, "asp": 159.0, "cost_per_unit": 37.99, "cogs": 37.99, "cogs_is_estimated": false, "referral_fee": -25.04, "fulfillment_fee": -10.5, "fees": -35.54, "ad_spend_allocated": -21.22, "gross_margin": 121.01, "margin_pct": 76.1, "net_profit": 64.25, "net_margin_pct": 40.4}}}, {"partner_sku": "S12DBPV1DB", "amazon_sku": null, "title": "LITTLE MOMMY Single Electric Wearable Breast Pump S12  Hands Free(1 Unit)", "units": 3, "gross_revenue": 387.0, "asp": 129.0, "cost_per_unit": 51.6, "cogs": 154.8, "cogs_is_estimated": true, "referral_fee": -60.96, "fulfillment_fee": -28.35, "fees": -89.31, "ad_spend_allocated": -68.99, "gross_margin": 232.2, "margin_pct": 60.0, "net_profit": 73.9, "net_margin_pct": 19.1, "months": {"2025-10": {"units": 2, "gross_revenue": 258.0, "asp": 129.0, "cost_per_unit": 51.6, "cogs": 103.2, "cogs_is_estimated": true, "referral_fee": -40.64, "fulfillment_fee": -18.9, "fees": -59.54, "ad_spend_allocated": -51.78, "gross_margin": 154.8, "margin_pct": 60.0, "net_profit": 43.48, "net_margin_pct": 16.9}, "2025-09": {"units": 1, "gross_revenue": 129.0, "asp": 129.0, "cost_per_unit": 51.6, "cogs": 51.6, "cogs_is_estimated": true, "referral_fee": -20.32, "fulfillment_fee": -9.45, "fees": -29.77, "ad_spend_allocated": -17.21, "gross_margin": 77.4, "margin_pct": 60.0, "net_profit": 30.42, "net_margin_pct": 23.6}}}, {"partner_sku": "S12ASBPV1DB", "amazon_sku": "NR-O1LQ-E1UK", "title": "BIRTH Electric Single Wearable Breast Pumps Hands-Free S12A", "units": 2, "gross_revenue": 338.0, "asp": 169.0, "cost_per_unit": 163.82, "cogs": 327.64, "cogs_is_estimated": false, "referral_fee": -53.24, "fulfillment_fee": -21.0, "fees": -74.24, "ad_spend_allocated": -82.53, "gross_margin": 10.36, "margin_pct": 3.1, "net_profit": -146.41, "net_margin_pct": -43.3, "months": {"2025-12": {"units": 1, "gross_revenue": 169.0, "asp": 169.0, "cost_per_unit": 163.82, "cogs": 163.82, "cogs_is_estimated": false, "referral_fee": -26.62, "fulfillment_fee": -10.5, "fees": -37.12, "ad_spend_allocated": -48.61, "gross_margin": 5.18, "margin_pct": 3.1, "net_profit": -80.55, "net_margin_pct": -47.7}, "2025-10": {"units": 1, "gross_revenue": 169.0, "asp": 169.0, "cost_per_unit": 163.82, "cogs": 163.82, "cogs_is_estimated": false, "referral_fee": -26.62, "fulfillment_fee": -10.5, "fees": -37.12, "ad_spend_allocated": -33.92, "gross_margin": 5.18, "margin_pct": 3.1, "net_profit": -65.86, "net_margin_pct": -39.0}}}, {"partner_sku": "S12ADBPV1DB", "amazon_sku": null, "title": "BIRTH Wearable Double Electrical Breast Pumps S12A with Storage Bag (2 Packs, White)", "units": 2, "gross_revenue": 289.0, "asp": 144.5, "cost_per_unit": 57.8, "cogs": 115.6, "cogs_is_estimated": true, "referral_fee": -45.52, "fulfillment_fee": -18.9, "fees": -64.42, "ad_spend_allocated": -83.13, "gross_margin": 173.4, "margin_pct": 60.0, "net_profit": 25.85, "net_margin_pct": 8.9, "months": {"2025-12": {"units": 1, "gross_revenue": 289.0, "asp": 289.0, "cost_per_unit": 115.6, "cogs": 115.6, "cogs_is_estimated": true, "referral_fee": -45.52, "fulfillment_fee": -9.45, "fees": -54.97, "ad_spend_allocated": -83.13, "gross_margin": 173.4, "margin_pct": 60.0, "net_profit": 35.3, "net_margin_pct": 12.2}, "2025-09": {"units": 1, "gross_revenue": 0.0, "asp": 0.0, "cost_per_unit": 0.0, "cogs": 0.0, "cogs_is_estimated": true, "referral_fee": 0.0, "fulfillment_fee": -9.45, "fees": -9.45, "ad_spend_allocated": -0.0, "gross_margin": 0.0, "margin_pct": null, "net_profit": -9.45, "net_margin_pct": null}}}, {"partner_sku": "RH188", "amazon_sku": "RH188SBPZ", "title": "Birth - Manual Breast Pump RH188; Portable, Lightweight Handheld Breastfeeding Pump with Ergonomic Handle, Quiet Suction, BPA-Free \u2013 Easy to Use & Clean; Ideal for Travel & On-the-Go Moms", "units": 3, "gross_revenue": 207.0, "asp": 69.0, "cost_per_unit": 11.05, "cogs": 33.15, "cogs_is_estimated": false, "referral_fee": -32.61, "fulfillment_fee": -26.79, "fees": -59.4, "ad_spend_allocated": -59.54, "gross_margin": 173.85, "margin_pct": 84.0, "net_profit": 54.91, "net_margin_pct": 26.5, "months": {"2025-12": {"units": 3, "gross_revenue": 207.0, "asp": 69.0, "cost_per_unit": 11.05, "cogs": 33.15, "cogs_is_estimated": false, "referral_fee": -32.61, "fulfillment_fee": -26.79, "fees": -59.4, "ad_spend_allocated": -59.54, "gross_margin": 173.85, "margin_pct": 84.0, "net_profit": 54.91, "net_margin_pct": 26.5}}}, {"partner_sku": "AEROSC-6", "amazon_sku": "AEROSC-6", "title": "Digital Air Fryer with in-built Smart Scale - 5.7L, Large Capacity, Oil-Free Hot Air Circulation, 8-in-1 Touchscreen Presets, Fast Preheat, Healthy Cooking, Easy Clean 5.7 L 1700 W AEROSC-6 black", "units": 1, "gross_revenue": 199.0, "asp": 199.0, "cost_per_unit": 149.83, "cogs": 149.83, "cogs_is_estimated": false, "referral_fee": -27.16, "fulfillment_fee": -19.95, "fees": -47.11, "ad_spend_allocated": -57.24, "gross_margin": 49.17, "margin_pct": 24.7, "net_profit": -55.18, "net_margin_pct": -27.7, "months": {"2025-12": {"units": 1, "gross_revenue": 199.0, "asp": 199.0, "cost_per_unit": 149.83, "cogs": 149.83, "cogs_is_estimated": false, "referral_fee": -27.16, "fulfillment_fee": -19.95, "fees": -47.11, "ad_spend_allocated": -57.24, "gross_margin": 49.17, "margin_pct": 24.7, "net_profit": -55.18, "net_margin_pct": -27.7}}}, {"partner_sku": "RH218", "amazon_sku": "RH218SBPZ", "title": "Birth - Electric Single Breast Pump RH218; Portable Pump with Quiet Suction, 2 Modes & 4 Levels \u2013 USB Rechargeable, LCD Display, BPA-Free \u2013 Compact & Cute Design for Travel or Home Use", "units": 1, "gross_revenue": 99.0, "asp": 99.0, "cost_per_unit": 31.84, "cogs": 31.84, "cogs_is_estimated": false, "referral_fee": -15.59, "fulfillment_fee": -9.45, "fees": -25.04, "ad_spend_allocated": -21.23, "gross_margin": 67.16, "margin_pct": 67.8, "net_profit": 20.89, "net_margin_pct": 21.1, "months": {"2025-11": {"units": 1, "gross_revenue": 99.0, "asp": 99.0, "cost_per_unit": 31.84, "cogs": 31.84, "cogs_is_estimated": false, "referral_fee": -15.59, "fulfillment_fee": -9.45, "fees": -25.04, "ad_spend_allocated": -21.23, "gross_margin": 67.16, "margin_pct": 67.8, "net_profit": 20.89, "net_margin_pct": 21.1}}}, {"partner_sku": "S39DBPDB", "amazon_sku": "S39DBPDB", "title": "BIRTH Electric Double Wearable Breast Pumps Hands-free S39", "units": 1, "gross_revenue": 0.0, "asp": 0.0, "cost_per_unit": 130.95, "cogs": 130.95, "cogs_is_estimated": false, "referral_fee": 0.0, "fulfillment_fee": -11.03, "fees": -11.03, "ad_spend_allocated": 0.0, "gross_margin": -130.95, "margin_pct": null, "net_profit": -141.98, "net_margin_pct": null, "months": {"2025-12": {"units": 1, "gross_revenue": 0.0, "asp": 0.0, "cost_per_unit": 130.95, "cogs": 130.95, "cogs_is_estimated": false, "referral_fee": 0.0, "fulfillment_fee": -11.03, "fees": -11.03, "ad_spend_allocated": -0.0, "gross_margin": -130.95, "margin_pct": null, "net_profit": -141.98, "net_margin_pct": null}}}], "inventory": [{"sku": "62-0VFC-64SJ", "name": "AEROFRY 9L Dual-Zone Air Fryer", "noon_inv": 22, "wh_inv": 482, "total_inv": 504, "units_sold_ytd": 67, "avg_daily_sales": 0.184, "reorder_point_90d": 16.5, "days_of_cover": 2745.7, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "AEROSC-6", "name": "Aerofry 5.7L Smart Scale Fryer", "noon_inv": 12, "wh_inv": 362, "total_inv": 374, "units_sold_ytd": 1, "avg_daily_sales": 0.003, "reorder_point_90d": 0.2, "days_of_cover": 136510.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "S39DBPDB", "name": "LITTLE MOMMY Double Breast Pump", "noon_inv": 3, "wh_inv": 271, "total_inv": 274, "units_sold_ytd": 1, "avg_daily_sales": 0.003, "reorder_point_90d": 0.2, "days_of_cover": 100010.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "TJ-FDH7-PNAI", "name": "AEROFRY Air Fryer 6L", "noon_inv": 56, "wh_inv": 123, "total_inv": 179, "units_sold_ytd": 26, "avg_daily_sales": 0.071, "reorder_point_90d": 6.4, "days_of_cover": 2512.9, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH188SBPZ", "name": "Birth Manual Pump RH188", "noon_inv": 33, "wh_inv": 100, "total_inv": 133, "units_sold_ytd": 3, "avg_daily_sales": 0.008, "reorder_point_90d": 0.7, "days_of_cover": 16181.7, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "NR-O1LQ-E1UK", "name": "BIRTH Double Breast Pump S12A", "noon_inv": 3, "wh_inv": 115, "total_inv": 118, "units_sold_ytd": 2, "avg_daily_sales": 0.005, "reorder_point_90d": 0.5, "days_of_cover": 21535.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH228DBPZ", "name": "Birth Electric Pump RH228", "noon_inv": 25, "wh_inv": 53, "total_inv": 78, "units_sold_ytd": 10, "avg_daily_sales": 0.027, "reorder_point_90d": 2.5, "days_of_cover": 2847.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH1008BSZ", "name": "Birth Bottle Sterilizer RH1008", "noon_inv": 7, "wh_inv": 66, "total_inv": 73, "units_sold_ytd": 11, "avg_daily_sales": 0.03, "reorder_point_90d": 2.7, "days_of_cover": 2422.3, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH218SBPZ", "name": "Birth Electric Pump RH218", "noon_inv": 13, "wh_inv": 26, "total_inv": 39, "units_sold_ytd": 1, "avg_daily_sales": 0.003, "reorder_point_90d": 0.2, "days_of_cover": 14235.0, "suggested_reorder_qty": 0, "needs_reorder": false}], "cost_table": [{"sku": "NR-O1LQ-E1UK", "is_estimated": false, "product_cost_usd": 36.78, "freight_usd": 3.68, "duty_usd": 2.02, "vat_usd": 2.12, "landed_cost_usd": 44.61, "landed_cost": 163.82, "recommended_asp_60pct_margin": 409.56, "actual_asp": 169.0, "wac_revised": false, "name": "BIRTH Double Breast Pump S12A", "margin_at_actual_pct": 3.1}, {"sku": "AEROSC-6", "is_estimated": false, "product_cost_usd": 33.64, "freight_usd": 3.36, "duty_usd": 1.85, "vat_usd": 1.94, "landed_cost_usd": 40.8, "landed_cost": 149.83, "recommended_asp_60pct_margin": 374.57, "actual_asp": 199.0, "wac_revised": false, "name": "Aerofry 5.7L Smart Scale Fryer", "margin_at_actual_pct": 24.7}, {"sku": "62-0VFC-64SJ", "is_estimated": false, "product_cost_usd": 32.9, "freight_usd": 3.29, "duty_usd": 1.81, "vat_usd": 1.9, "landed_cost_usd": 39.89, "landed_cost": 146.51, "recommended_asp_60pct_margin": 366.27, "actual_asp": 362.2, "wac_revised": false, "name": "AEROFRY 9L Dual-Zone Air Fryer", "margin_at_actual_pct": 59.5}, {"sku": "S39DBPDB", "is_estimated": false, "product_cost_usd": 29.4, "freight_usd": 2.94, "duty_usd": 1.62, "vat_usd": 1.7, "landed_cost_usd": 35.66, "landed_cost": 130.95, "recommended_asp_60pct_margin": 327.37, "actual_asp": 0.0, "wac_revised": false, "name": "LITTLE MOMMY Double Breast Pump", "margin_at_actual_pct": null}, {"sku": "TJ-FDH7-PNAI", "is_estimated": false, "product_cost_usd": 21.5, "freight_usd": 2.15, "duty_usd": 1.18, "vat_usd": 1.24, "landed_cost_usd": 26.07, "landed_cost": 95.76, "recommended_asp_60pct_margin": 239.39, "actual_asp": 164.38, "wac_revised": false, "name": "AEROFRY Air Fryer 6L", "margin_at_actual_pct": 41.7}, {"sku": "RH1008BSZ", "is_estimated": false, "product_cost_usd": 18.29, "freight_usd": 1.83, "duty_usd": 1.01, "vat_usd": 1.06, "landed_cost_usd": 22.18, "landed_cost": 81.46, "recommended_asp_60pct_margin": 203.65, "actual_asp": 109.09, "wac_revised": false, "name": "Birth Bottle Sterilizer RH1008", "margin_at_actual_pct": 25.3}, {"sku": "RH228DBPZ", "is_estimated": false, "product_cost_usd": 8.53, "freight_usd": 0.85, "duty_usd": 0.47, "vat_usd": 0.49, "landed_cost_usd": 10.34, "landed_cost": 37.99, "recommended_asp_60pct_margin": 94.98, "actual_asp": 117.2, "wac_revised": false, "name": "Birth Electric Pump RH228", "margin_at_actual_pct": 67.6}, {"sku": "RH218SBPZ", "is_estimated": false, "product_cost_usd": 7.15, "freight_usd": 0.71, "duty_usd": 0.39, "vat_usd": 0.41, "landed_cost_usd": 8.67, "landed_cost": 31.84, "recommended_asp_60pct_margin": 79.61, "actual_asp": 99.0, "wac_revised": false, "name": "Birth Electric Pump RH218", "margin_at_actual_pct": 67.8}, {"sku": "RH188SBPZ", "is_estimated": false, "product_cost_usd": 2.48, "freight_usd": 0.25, "duty_usd": 0.14, "vat_usd": 0.14, "landed_cost_usd": 3.01, "landed_cost": 11.05, "recommended_asp_60pct_margin": 27.61, "actual_asp": 69.0, "wac_revised": false, "name": "Birth Manual Pump RH188", "margin_at_actual_pct": 84.0}]};
+  const overallData = {"months": ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"], "monthly": [{"month": "2025-01", "gross_revenue": 21770.0, "gross_revenue_amazon": 21770.0, "gross_revenue_noon": 0.0, "cogs": 7642.73, "gross_margin": 14127.27, "other_costs_amazon": -4423.11, "other_costs_noon": 0.0, "other_costs_amazon_incl_refunds": -5987.11, "ad_spend": -3711.59, "net_profit": 4428.57, "net_profit_amazon": 4428.57, "net_profit_noon": 0.0, "orders": 69, "units": 70}, {"month": "2025-02", "gross_revenue": 24149.79, "gross_revenue_amazon": 24149.79, "gross_revenue_noon": 0.0, "cogs": 8665.48, "gross_margin": 15484.31, "other_costs_amazon": -4738.61, "other_costs_noon": 0.0, "other_costs_amazon_incl_refunds": -7046.82, "ad_spend": -5857.86, "net_profit": 2579.63, "net_profit_amazon": 2579.63, "net_profit_noon": 0.0, "orders": 76, "units": 77}, {"month": "2025-03", "gross_revenue": 25893.0, "gross_revenue_amazon": 25893.0, "gross_revenue_noon": 0.0, "cogs": 8566.88, "gross_margin": 17326.12, "other_costs_amazon": -4594.06, "other_costs_noon": 0.0, "other_costs_amazon_incl_refunds": -9846.16, "ad_spend": -5595.26, "net_profit": 1884.7, "net_profit_amazon": 1884.7, "net_profit_noon": 0.0, "orders": 63, "units": 64}, {"month": "2025-04", "gross_revenue": 20697.4, "gross_revenue_amazon": 20238.4, "gross_revenue_noon": 459.0, "cogs": 7201.94, "gross_margin": 13495.46, "other_costs_amazon": -3867.43, "other_costs_noon": -57.13, "other_costs_amazon_incl_refunds": -6735.53, "ad_spend": -7192.86, "net_profit": -490.06, "net_profit_amazon": -745.42, "net_profit_noon": 255.36, "orders": 52, "units": 52}, {"month": "2025-05", "gross_revenue": 11140.1, "gross_revenue_amazon": 10342.1, "gross_revenue_noon": 798.0, "cogs": 4002.8, "gross_margin": 7137.3, "other_costs_amazon": -2200.17, "other_costs_noon": -101.66, "other_costs_amazon_incl_refunds": -3715.17, "ad_spend": -5948.49, "net_profit": -2628.02, "net_profit_amazon": -1802.82, "net_profit_noon": -825.2, "orders": 30, "units": 30}, {"month": "2025-06", "gross_revenue": 4045.2, "gross_revenue_amazon": 3646.2, "gross_revenue_noon": 399.0, "cogs": 1524.43, "gross_margin": 2520.77, "other_costs_amazon": -964.4, "other_costs_noon": -50.83, "other_costs_amazon_incl_refunds": -2639.5, "ad_spend": -896.48, "net_profit": -1066.03, "net_profit_amazon": -1267.69, "net_profit_noon": 201.66, "orders": 15, "units": 15}, {"month": "2025-07", "gross_revenue": 8750.0, "gross_revenue_amazon": 7154.0, "gross_revenue_noon": 1596.0, "cogs": 3242.97, "gross_margin": 5507.03, "other_costs_amazon": -1765.76, "other_costs_noon": -203.32, "other_costs_amazon_incl_refunds": -2364.76, "ad_spend": -1717.12, "net_profit": 1221.83, "net_profit_amazon": 415.19, "net_profit_noon": 806.64, "orders": 20, "units": 20}, {"month": "2025-08", "gross_revenue": 11259.1, "gross_revenue_amazon": 7519.1, "gross_revenue_noon": 3740.0, "cogs": 3614.85, "gross_margin": 7644.25, "other_costs_amazon": -1653.47, "other_costs_noon": -446.33, "other_costs_amazon_incl_refunds": -3529.57, "ad_spend": -2622.15, "net_profit": 1046.2, "net_profit_amazon": -356.45, "net_profit_noon": 1402.65, "orders": 29, "units": 31}, {"month": "2025-09", "gross_revenue": 9330.1, "gross_revenue_amazon": 1613.1, "gross_revenue_noon": 7717.0, "cogs": 4109.49, "gross_margin": 5220.61, "other_costs_amazon": 5550.62, "other_costs_noon": -1280.19, "other_costs_amazon_incl_refunds": 5151.62, "ad_spend": -2667.25, "net_profit": 6424.79, "net_profit_amazon": 4338.9, "net_profit_noon": 2085.89, "orders": 31, "units": 31}, {"month": "2025-10", "gross_revenue": 9125.0, "gross_revenue_amazon": 3491.0, "gross_revenue_noon": 5634.0, "cogs": 3678.87, "gross_margin": 5446.13, "other_costs_amazon": -1086.99, "other_costs_noon": -945.87, "other_costs_amazon_incl_refunds": -1315.99, "ad_spend": -2235.14, "net_profit": 949.13, "net_profit_amazon": -104.87, "net_profit_noon": 1054.0, "orders": 27, "units": 27}, {"month": "2025-11", "gross_revenue": 10805.1, "gross_revenue_amazon": 4129.0, "gross_revenue_noon": 6676.1, "cogs": 4659.88, "gross_margin": 6145.22, "other_costs_amazon": -1211.74, "other_costs_noon": -1283.23, "other_costs_amazon_incl_refunds": -1440.74, "ad_spend": -3144.01, "net_profit": 277.24, "net_profit_amazon": -439.34, "net_profit_noon": 716.58, "orders": 39, "units": 40}, {"month": "2025-12", "gross_revenue": 12229.0, "gross_revenue_amazon": 6816.0, "gross_revenue_noon": 5413.0, "cogs": 5764.84, "gross_margin": 6464.16, "other_costs_amazon": -1862.04, "other_costs_noon": -1451.71, "other_costs_amazon_incl_refunds": -2609.04, "ad_spend": -6221.19, "net_profit": -3817.78, "net_profit_amazon": -3108.22, "net_profit_noon": -709.56, "orders": 62, "units": 62}], "ytd": {"gross_revenue": 169193.79, "cogs": 62675.16, "gross_margin": 106518.63, "ad_spend": -47809.4, "net_profit": 10810.2, "net_profit_amazon": 5822.18, "net_profit_noon": 4988.02, "orders": 513, "units": 519, "days_elapsed": 365, "net_proceeds": 73485.35, "other_costs_amazon_incl_refunds": -42078.77, "other_costs_noon": -5820.27, "revenue_per_day": 463.54, "units_per_day": 1.422}, "sku_rows": [{"sku": "PY-51U9-NDO7", "cost_per_unit": 195.25, "units": 117, "units_amazon": 117, "units_noon": 0, "gross_revenue": 68255.19, "gross_revenue_amazon": 68255.19, "gross_revenue_noon": 0.0, "asp": 583.38, "cogs": 21867.6, "fees": -10579.77, "ad_spend_allocated": -20465.07, "gross_margin": 46387.59, "margin_pct": 68.0, "net_profit": 15342.75, "net_margin_pct": 22.5, "months": {"2025-01": {"units": 17, "units_amazon": 17, "units_noon": 0, "gross_revenue": 10183.0, "gross_revenue_amazon": 10183.0, "gross_revenue_noon": 0.0, "asp": 599.0, "cogs": 3319.19, "fees": -2008.13, "ad_spend_allocated": -1736.11, "gross_margin": 6863.81, "margin_pct": 67.4, "net_profit": 3119.57, "net_margin_pct": 30.6}, "2025-02": {"units": 21, "units_amazon": 21, "units_noon": 0, "gross_revenue": 12248.89, "gross_revenue_amazon": 12248.89, "gross_revenue_noon": 0.0, "asp": 583.28, "cogs": 4100.17, "fees": -2322.1, "ad_spend_allocated": -2971.13, "gross_margin": 8148.72, "margin_pct": 66.5, "net_profit": 2855.49, "net_margin_pct": 23.3}, "2025-03": {"units": 24, "units_amazon": 24, "units_noon": 0, "gross_revenue": 14256.0, "gross_revenue_amazon": 14256.0, "gross_revenue_noon": 0.0, "asp": 594.0, "cogs": 4295.42, "fees": -2396.03, "ad_spend_allocated": -3080.6, "gross_margin": 9960.58, "margin_pct": 69.9, "net_profit": 4483.95, "net_margin_pct": 31.5}, "2025-04": {"units": 25, "units_amazon": 25, "units_noon": 0, "gross_revenue": 13657.0, "gross_revenue_amazon": 13657.0, "gross_revenue_noon": 0.0, "asp": 546.28, "cogs": 4685.91, "fees": -2463.07, "ad_spend_allocated": -4853.79, "gross_margin": 8971.09, "margin_pct": 65.7, "net_profit": 1654.23, "net_margin_pct": 12.1}, "2025-05": {"units": 9, "units_amazon": 9, "units_noon": 0, "gross_revenue": 5331.0, "gross_revenue_amazon": 5331.0, "gross_revenue_noon": 0.0, "asp": 592.33, "cogs": 1561.97, "fees": -1099.24, "ad_spend_allocated": -2432.98, "gross_margin": 3769.03, "margin_pct": 70.7, "net_profit": 236.81, "net_margin_pct": 4.4}, "2025-06": {"units": 0, "units_amazon": 0, "units_noon": 0, "gross_revenue": 0.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 0.0, "asp": null, "cogs": 0.0, "fees": 78.59, "ad_spend_allocated": 0.0, "gross_margin": 0.0, "margin_pct": null, "net_profit": 78.59, "net_margin_pct": null}, "2025-07": {"units": 7, "units_amazon": 7, "units_noon": 0, "gross_revenue": 4193.0, "gross_revenue_amazon": 4193.0, "gross_revenue_noon": 0.0, "asp": 599.0, "cogs": 1366.72, "fees": -930.7, "ad_spend_allocated": -1006.41, "gross_margin": 2826.28, "margin_pct": 67.4, "net_profit": 889.17, "net_margin_pct": 21.2}, "2025-08": {"units": 6, "units_amazon": 6, "units_noon": 0, "gross_revenue": 3714.3, "gross_revenue_amazon": 3714.3, "gross_revenue_noon": 0.0, "asp": 619.05, "cogs": 976.23, "fees": -732.94, "ad_spend_allocated": -1084.9, "gross_margin": 2738.07, "margin_pct": 73.7, "net_profit": 920.23, "net_margin_pct": 24.8}, "2025-10": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 1797.0, "gross_revenue_amazon": 1797.0, "gross_revenue_noon": 0.0, "asp": 599.0, "cogs": 585.74, "fees": -556.29, "ad_spend_allocated": -568.47, "gross_margin": 1211.26, "margin_pct": 67.4, "net_profit": 86.5, "net_margin_pct": 4.8}, "2025-11": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 1737.0, "gross_revenue_amazon": 1737.0, "gross_revenue_noon": 0.0, "asp": 579.0, "cogs": 585.74, "fees": -503.24, "ad_spend_allocated": -720.27, "gross_margin": 1151.26, "margin_pct": 66.3, "net_profit": -72.25, "net_margin_pct": -4.2}, "2025-12": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 1138.0, "gross_revenue_amazon": 1138.0, "gross_revenue_noon": 0.0, "asp": 569.0, "cogs": 390.49, "fees": -279.73, "ad_spend_allocated": -778.72, "gross_margin": 747.51, "margin_pct": 65.7, "net_profit": -310.94, "net_margin_pct": -27.3}}}, {"sku": "62-0VFC-64SJ", "cost_per_unit": 146.51, "units": 80, "units_amazon": 13, "units_noon": 67, "gross_revenue": 29444.1, "gross_revenue_amazon": 5177.0, "gross_revenue_noon": 24267.1, "asp": 368.05, "cogs": 11281.26, "fees": -4643.08, "ad_spend_allocated": -6259.34, "gross_margin": 18162.84, "margin_pct": 61.7, "net_profit": 7260.42, "net_margin_pct": 24.7, "months": {"2025-03": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 499.0, "gross_revenue_amazon": 499.0, "gross_revenue_noon": 0.0, "asp": 499.0, "cogs": 146.51, "fees": -99.09, "ad_spend_allocated": -107.83, "gross_margin": 352.49, "margin_pct": 70.6, "net_profit": 145.57, "net_margin_pct": 29.2}, "2025-04": {"units": 2, "units_amazon": 1, "units_noon": 1, "gross_revenue": 958.0, "gross_revenue_amazon": 499.0, "gross_revenue_noon": 459.0, "asp": 479.0, "cogs": 293.02, "fees": -158.72, "ad_spend_allocated": -177.35, "gross_margin": 664.98, "margin_pct": 69.4, "net_profit": 328.91, "net_margin_pct": 34.3}, "2025-05": {"units": 4, "units_amazon": 2, "units_noon": 2, "gross_revenue": 1656.0, "gross_revenue_amazon": 858.0, "gross_revenue_noon": 798.0, "asp": 414.0, "cogs": 586.04, "fees": -301.33, "ad_spend_allocated": -1620.1, "gross_margin": 1069.96, "margin_pct": 64.6, "net_profit": -851.47, "net_margin_pct": -51.4}, "2025-06": {"units": 2, "units_amazon": 1, "units_noon": 1, "gross_revenue": 798.0, "gross_revenue_amazon": 399.0, "gross_revenue_noon": 399.0, "asp": 399.0, "cogs": 293.02, "fees": -178.07, "ad_spend_allocated": -98.1, "gross_margin": 504.98, "margin_pct": 63.3, "net_profit": 228.81, "net_margin_pct": 28.7}, "2025-07": {"units": 7, "units_amazon": 3, "units_noon": 4, "gross_revenue": 2853.0, "gross_revenue_amazon": 1257.0, "gross_revenue_noon": 1596.0, "asp": 407.57, "cogs": 1025.57, "fees": -596.58, "ad_spend_allocated": -301.71, "gross_margin": 1827.43, "margin_pct": 64.1, "net_profit": 929.14, "net_margin_pct": 32.6}, "2025-08": {"units": 12, "units_amazon": 2, "units_noon": 10, "gross_revenue": 4478.0, "gross_revenue_amazon": 738.0, "gross_revenue_noon": 3740.0, "asp": 373.17, "cogs": 1465.1, "fees": -557.13, "ad_spend_allocated": -641.48, "gross_margin": 3012.9, "margin_pct": 67.3, "net_profit": 1814.29, "net_margin_pct": 40.5}, "2025-09": {"units": 20, "units_amazon": 0, "units_noon": 20, "gross_revenue": 7190.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 7190.0, "asp": 359.5, "cogs": 2930.2, "fees": -1152.86, "ad_spend_allocated": -959.42, "gross_margin": 4259.8, "margin_pct": 59.2, "net_profit": 2147.52, "net_margin_pct": 29.9}, "2025-10": {"units": 14, "units_amazon": 0, "units_noon": 14, "gross_revenue": 5066.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 5066.0, "asp": 361.86, "cogs": 2051.14, "fees": -816.5, "ad_spend_allocated": -1016.78, "gross_margin": 3014.86, "margin_pct": 59.5, "net_profit": 1181.58, "net_margin_pct": 23.3}, "2025-11": {"units": 15, "units_amazon": 0, "units_noon": 15, "gross_revenue": 5019.1, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 5019.1, "asp": 334.61, "cogs": 2197.65, "fees": -886.25, "ad_spend_allocated": -1076.47, "gross_margin": 2821.45, "margin_pct": 56.2, "net_profit": 858.73, "net_margin_pct": 17.1}, "2025-12": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 927.0, "gross_revenue_amazon": 927.0, "gross_revenue_noon": 0.0, "asp": 309.0, "cogs": 293.02, "fees": -223.58, "ad_spend_allocated": -634.34, "gross_margin": 633.98, "margin_pct": 68.4, "net_profit": -223.94, "net_margin_pct": -24.2}}}, {"sku": "LN-WRP7-RIMK", "cost_per_unit": 97.69, "units": 77, "units_amazon": 77, "units_noon": 0, "gross_revenue": 22303.9, "gross_revenue_amazon": 22303.9, "gross_revenue_noon": 0.0, "asp": 289.66, "cogs": 7424.64, "fees": -3898.6, "ad_spend_allocated": -6687.42, "gross_margin": 14879.26, "margin_pct": 66.7, "net_profit": 4293.24, "net_margin_pct": 19.2, "months": {"2025-01": {"units": 13, "units_amazon": 13, "units_noon": 0, "gross_revenue": 3887.0, "gross_revenue_amazon": 3887.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 1172.31, "fees": -793.77, "ad_spend_allocated": -662.7, "gross_margin": 2714.69, "margin_pct": 69.8, "net_profit": 1258.22, "net_margin_pct": 32.4}, "2025-02": {"units": 6, "units_amazon": 6, "units_noon": 0, "gross_revenue": 1764.1, "gross_revenue_amazon": 1764.1, "gross_revenue_noon": 0.0, "asp": 294.02, "cogs": 586.16, "fees": -327.61, "ad_spend_allocated": -427.91, "gross_margin": 1177.94, "margin_pct": 66.8, "net_profit": 422.42, "net_margin_pct": 23.9}, "2025-03": {"units": 17, "units_amazon": 17, "units_noon": 0, "gross_revenue": 5023.2, "gross_revenue_amazon": 5023.2, "gross_revenue_noon": 0.0, "asp": 295.48, "cogs": 1660.77, "fees": -978.47, "ad_spend_allocated": -1085.47, "gross_margin": 3362.43, "margin_pct": 66.9, "net_profit": 1298.49, "net_margin_pct": 25.8}, "2025-04": {"units": 14, "units_amazon": 14, "units_noon": 0, "gross_revenue": 3886.0, "gross_revenue_amazon": 3886.0, "gross_revenue_noon": 0.0, "asp": 277.57, "cogs": 1367.7, "fees": -810.4, "ad_spend_allocated": -1381.11, "gross_margin": 2518.3, "margin_pct": 64.8, "net_profit": 326.79, "net_margin_pct": 8.4}, "2025-05": {"units": 4, "units_amazon": 4, "units_noon": 0, "gross_revenue": 1196.0, "gross_revenue_amazon": 1196.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 390.77, "fees": -250.07, "ad_spend_allocated": -545.84, "gross_margin": 805.23, "margin_pct": 67.3, "net_profit": 9.32, "net_margin_pct": 0.8}, "2025-06": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 299.0, "gross_revenue_amazon": 299.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 97.69, "fees": -57.93, "ad_spend_allocated": -73.51, "gross_margin": 201.31, "margin_pct": 67.3, "net_profit": 69.87, "net_margin_pct": 23.4}, "2025-07": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 598.0, "gross_revenue_amazon": 598.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 195.39, "fees": -153.93, "ad_spend_allocated": -143.53, "gross_margin": 402.61, "margin_pct": 67.3, "net_profit": 105.15, "net_margin_pct": 17.6}, "2025-08": {"units": 8, "units_amazon": 8, "units_noon": 0, "gross_revenue": 2212.6, "gross_revenue_amazon": 2212.6, "gross_revenue_noon": 0.0, "asp": 276.57, "cogs": 781.54, "fees": -571.04, "ad_spend_allocated": -646.27, "gross_margin": 1431.06, "margin_pct": 64.7, "net_profit": 213.75, "net_margin_pct": 9.7}, "2025-10": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 299.0, "gross_revenue_amazon": 299.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 97.69, "fees": -97.82, "ad_spend_allocated": -94.59, "gross_margin": 201.31, "margin_pct": 67.3, "net_profit": 8.9, "net_margin_pct": 3.0}, "2025-11": {"units": 6, "units_amazon": 6, "units_noon": 0, "gross_revenue": 1794.0, "gross_revenue_amazon": 1794.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 586.16, "fees": -550.14, "ad_spend_allocated": -743.91, "gross_margin": 1207.84, "margin_pct": 67.3, "net_profit": -86.21, "net_margin_pct": -4.8}, "2025-12": {"units": 5, "units_amazon": 5, "units_noon": 0, "gross_revenue": 1345.0, "gross_revenue_amazon": 1345.0, "gross_revenue_noon": 0.0, "asp": 269.0, "cogs": 488.46, "fees": -320.8, "ad_spend_allocated": -920.37, "gross_margin": 856.54, "margin_pct": 63.7, "net_profit": -384.63, "net_margin_pct": -28.6}}}, {"sku": "2D-JIOC-DYZ2", "cost_per_unit": 68.69, "units": 88, "units_amazon": 88, "units_noon": 0, "gross_revenue": 13028.21, "gross_revenue_amazon": 13028.21, "gross_revenue_noon": 0.0, "asp": 148.05, "cogs": 5769.63, "fees": -2627.67, "ad_spend_allocated": -3906.27, "gross_margin": 7258.58, "margin_pct": 55.7, "net_profit": 724.64, "net_margin_pct": 5.6, "months": {"2025-01": {"units": 31, "units_amazon": 31, "units_noon": 0, "gross_revenue": 4759.0, "gross_revenue_amazon": 4759.0, "gross_revenue_noon": 0.0, "asp": 153.52, "cogs": 2060.58, "fees": -1101.43, "ad_spend_allocated": -811.37, "gross_margin": 2698.42, "margin_pct": 56.7, "net_profit": 785.62, "net_margin_pct": 16.5}, "2025-02": {"units": 34, "units_amazon": 34, "units_noon": 0, "gross_revenue": 4792.21, "gross_revenue_amazon": 4792.21, "gross_revenue_noon": 0.0, "asp": 140.95, "cogs": 2266.64, "fees": -1070.38, "ad_spend_allocated": -1162.42, "gross_margin": 2525.57, "margin_pct": 52.7, "net_profit": 292.77, "net_margin_pct": 6.1}, "2025-03": {"units": 5, "units_amazon": 5, "units_noon": 0, "gross_revenue": 795.0, "gross_revenue_amazon": 795.0, "gross_revenue_noon": 0.0, "asp": 159.0, "cogs": 274.74, "fees": -150.22, "ad_spend_allocated": -171.79, "gross_margin": 520.26, "margin_pct": 65.4, "net_profit": 198.25, "net_margin_pct": 24.9}, "2025-04": {"units": 7, "units_amazon": 7, "units_noon": 0, "gross_revenue": 1063.0, "gross_revenue_amazon": 1063.0, "gross_revenue_noon": 0.0, "asp": 151.86, "cogs": 480.8, "fees": -282.61, "ad_spend_allocated": -377.8, "gross_margin": 582.2, "margin_pct": 54.8, "net_profit": -78.21, "net_margin_pct": -7.4}, "2025-05": {"units": 4, "units_amazon": 4, "units_noon": 0, "gross_revenue": 596.0, "gross_revenue_amazon": 596.0, "gross_revenue_noon": 0.0, "asp": 149.0, "cogs": 274.74, "fees": -141.73, "ad_spend_allocated": -272.0, "gross_margin": 321.26, "margin_pct": 53.9, "net_profit": -92.47, "net_margin_pct": -15.5}, "2025-08": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 308.0, "gross_revenue_amazon": 308.0, "gross_revenue_noon": 0.0, "asp": 154.0, "cogs": 137.37, "fees": -87.46, "ad_spend_allocated": -89.96, "gross_margin": 170.63, "margin_pct": 55.4, "net_profit": -6.79, "net_margin_pct": -2.2}, "2025-09": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 298.0, "gross_revenue_amazon": 298.0, "gross_revenue_noon": 0.0, "asp": 149.0, "cogs": 137.37, "fees": 1009.27, "ad_spend_allocated": -302.51, "gross_margin": 160.63, "margin_pct": 53.9, "net_profit": 867.39, "net_margin_pct": 291.1}, "2025-10": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 139.0, "gross_revenue_amazon": 139.0, "gross_revenue_noon": 0.0, "asp": 139.0, "cogs": 68.69, "fees": -50.33, "ad_spend_allocated": -43.97, "gross_margin": 70.31, "margin_pct": 50.6, "net_profit": -23.99, "net_margin_pct": -17.3}, "2025-12": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 278.0, "gross_revenue_amazon": 278.0, "gross_revenue_noon": 0.0, "asp": 139.0, "cogs": 68.69, "fees": -60.76, "ad_spend_allocated": -190.23, "gross_margin": 209.31, "margin_pct": 75.3, "net_profit": -41.68, "net_margin_pct": -15.0}}}, {"sku": "NR-O1LQ-E1UK", "cost_per_unit": 163.82, "units": 36, "units_amazon": 34, "units_noon": 2, "gross_revenue": 12374.1, "gross_revenue_amazon": 12036.1, "gross_revenue_noon": 338.0, "asp": 343.73, "cogs": 5569.97, "fees": -2134.15, "ad_spend_allocated": -3691.34, "gross_margin": 6804.13, "margin_pct": 55.0, "net_profit": 978.64, "net_margin_pct": 7.9, "months": {"2025-01": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 998.0, "gross_revenue_amazon": 998.0, "gross_revenue_noon": 0.0, "asp": 499.0, "cogs": 327.65, "fees": -136.56, "ad_spend_allocated": -170.15, "gross_margin": 670.35, "margin_pct": 67.2, "net_profit": 363.64, "net_margin_pct": 36.4}, "2025-02": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 519.0, "gross_revenue_amazon": 519.0, "gross_revenue_noon": 0.0, "asp": 519.0, "cogs": 163.82, "fees": -102.2, "ad_spend_allocated": -125.89, "gross_margin": 355.18, "margin_pct": 68.4, "net_profit": 127.09, "net_margin_pct": 24.5}, "2025-03": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 1038.0, "gross_revenue_amazon": 1038.0, "gross_revenue_noon": 0.0, "asp": 519.0, "cogs": 327.65, "fees": -137.07, "ad_spend_allocated": -224.3, "gross_margin": 710.35, "margin_pct": 68.4, "net_profit": 348.98, "net_margin_pct": 33.6}, "2025-04": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 399.0, "gross_revenue_amazon": 399.0, "gross_revenue_noon": 0.0, "asp": 399.0, "cogs": 163.82, "fees": -82.48, "ad_spend_allocated": -141.81, "gross_margin": 235.18, "margin_pct": 58.9, "net_profit": 10.89, "net_margin_pct": 2.7}, "2025-05": {"units": 5, "units_amazon": 5, "units_noon": 0, "gross_revenue": 1465.1, "gross_revenue_amazon": 1465.1, "gross_revenue_noon": 0.0, "asp": 293.02, "cogs": 819.11, "fees": -348.92, "ad_spend_allocated": -668.65, "gross_margin": 645.99, "margin_pct": 44.1, "net_profit": -371.58, "net_margin_pct": -25.4}, "2025-06": {"units": 6, "units_amazon": 6, "units_noon": 0, "gross_revenue": 1794.0, "gross_revenue_amazon": 1794.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 655.29, "fees": -488.86, "ad_spend_allocated": -441.09, "gross_margin": 1138.71, "margin_pct": 63.5, "net_profit": 208.76, "net_margin_pct": 11.6}, "2025-07": {"units": 4, "units_amazon": 4, "units_noon": 0, "gross_revenue": 1106.0, "gross_revenue_amazon": 1106.0, "gross_revenue_noon": 0.0, "asp": 276.5, "cogs": 655.29, "fees": -287.87, "ad_spend_allocated": -265.46, "gross_margin": 450.71, "margin_pct": 40.8, "net_profit": -102.62, "net_margin_pct": -9.3}, "2025-08": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 269.0, "gross_revenue_amazon": 269.0, "gross_revenue_noon": 0.0, "asp": 269.0, "cogs": 163.82, "fees": -69.98, "ad_spend_allocated": -78.57, "gross_margin": 105.18, "margin_pct": 39.1, "net_profit": -43.37, "net_margin_pct": -16.1}, "2025-09": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 937.0, "gross_revenue_amazon": 937.0, "gross_revenue_noon": 0.0, "asp": 312.33, "cogs": 491.47, "fees": 3257.52, "ad_spend_allocated": -951.18, "gross_margin": 445.53, "margin_pct": 47.5, "net_profit": 2751.87, "net_margin_pct": 293.7}, "2025-10": {"units": 3, "units_amazon": 2, "units_noon": 1, "gross_revenue": 967.0, "gross_revenue_amazon": 798.0, "gross_revenue_noon": 169.0, "asp": 322.33, "cogs": 491.47, "fees": -290.83, "ad_spend_allocated": -286.36, "gross_margin": 475.53, "margin_pct": 49.2, "net_profit": -101.66, "net_margin_pct": -10.5}, "2025-11": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 399.0, "gross_revenue_amazon": 399.0, "gross_revenue_noon": 0.0, "asp": 399.0, "cogs": 163.82, "fees": -118.67, "ad_spend_allocated": -165.45, "gross_margin": 235.18, "margin_pct": 58.9, "net_profit": -48.94, "net_margin_pct": -12.3}, "2025-12": {"units": 7, "units_amazon": 6, "units_noon": 1, "gross_revenue": 2483.0, "gross_revenue_amazon": 2314.0, "gross_revenue_noon": 169.0, "asp": 354.71, "cogs": 1146.76, "fees": -757.4, "ad_spend_allocated": -1632.05, "gross_margin": 1336.24, "margin_pct": 53.8, "net_profit": -1053.21, "net_margin_pct": -42.4}}}, {"sku": "S39DBPDB", "cost_per_unit": 130.95, "units": 32, "units_amazon": 31, "units_noon": 1, "gross_revenue": 9615.6, "gross_revenue_amazon": 9615.6, "gross_revenue_noon": 0.0, "asp": 300.49, "cogs": 3928.42, "fees": -1555.36, "ad_spend_allocated": -2883.06, "gross_margin": 5687.18, "margin_pct": 59.1, "net_profit": 1248.76, "net_margin_pct": 13.0, "months": {"2025-01": {"units": 4, "units_amazon": 4, "units_noon": 0, "gross_revenue": 1196.0, "gross_revenue_amazon": 1196.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 523.79, "fees": -218.16, "ad_spend_allocated": -203.91, "gross_margin": 672.21, "margin_pct": 56.2, "net_profit": 250.14, "net_margin_pct": 20.9}, "2025-02": {"units": 12, "units_amazon": 12, "units_noon": 0, "gross_revenue": 4088.6, "gross_revenue_amazon": 4088.6, "gross_revenue_noon": 0.0, "asp": 340.72, "cogs": 1309.47, "fees": -754.58, "ad_spend_allocated": -991.75, "gross_margin": 2779.13, "margin_pct": 68.0, "net_profit": 1032.8, "net_margin_pct": 25.3}, "2025-03": {"units": 13, "units_amazon": 13, "units_noon": 0, "gross_revenue": 3763.8, "gross_revenue_amazon": 3763.8, "gross_revenue_noon": 0.0, "asp": 289.52, "cogs": 1702.31, "fees": -721.31, "ad_spend_allocated": -813.33, "gross_margin": 2061.49, "margin_pct": 54.8, "net_profit": 526.85, "net_margin_pct": 14.0}, "2025-04": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 268.2, "gross_revenue_amazon": 268.2, "gross_revenue_noon": 0.0, "asp": 268.2, "cogs": 130.95, "fees": -58.88, "ad_spend_allocated": -95.32, "gross_margin": 137.25, "margin_pct": 51.2, "net_profit": -16.95, "net_margin_pct": -6.3}, "2025-05": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 299.0, "gross_revenue_amazon": 299.0, "gross_revenue_noon": 0.0, "asp": 299.0, "cogs": 130.95, "fees": -33.32, "ad_spend_allocated": -136.46, "gross_margin": 168.05, "margin_pct": 56.2, "net_profit": -1.73, "net_margin_pct": -0.6}, "2025-12": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 0.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 0.0, "asp": 0.0, "cogs": 130.95, "fees": -11.03, "ad_spend_allocated": 0.0, "gross_margin": -130.95, "margin_pct": null, "net_profit": -141.98, "net_margin_pct": null}}}, {"sku": "D4-2UK7-AM2Z", "cost_per_unit": 79.74, "units": 26, "units_amazon": 26, "units_noon": 0, "gross_revenue": 5452.59, "gross_revenue_amazon": 5452.59, "gross_revenue_noon": 0.0, "asp": 209.72, "cogs": 1993.43, "fees": -1021.65, "ad_spend_allocated": -1634.86, "gross_margin": 3459.16, "margin_pct": 63.4, "net_profit": 802.65, "net_margin_pct": 14.7, "months": {"2025-01": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 747.0, "gross_revenue_amazon": 747.0, "gross_revenue_noon": 0.0, "asp": 249.0, "cogs": 239.21, "fees": -165.07, "ad_spend_allocated": -127.36, "gross_margin": 507.79, "margin_pct": 68.0, "net_profit": 215.36, "net_margin_pct": 28.8}, "2025-02": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 736.99, "gross_revenue_amazon": 736.99, "gross_revenue_noon": 0.0, "asp": 245.66, "cogs": 239.21, "fees": -161.73, "ad_spend_allocated": -178.77, "gross_margin": 497.78, "margin_pct": 67.5, "net_profit": 157.28, "net_margin_pct": 21.3}, "2025-03": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 518.0, "gross_revenue_amazon": 518.0, "gross_revenue_noon": 0.0, "asp": 259.0, "cogs": 159.47, "fees": -111.85, "ad_spend_allocated": -111.94, "gross_margin": 358.53, "margin_pct": 69.2, "net_profit": 134.74, "net_margin_pct": 26.0}, "2025-04": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 466.2, "gross_revenue_amazon": 466.2, "gross_revenue_noon": 0.0, "asp": 233.1, "cogs": 79.74, "fees": -68.4, "ad_spend_allocated": -165.69, "gross_margin": 386.46, "margin_pct": 82.9, "net_profit": 152.37, "net_margin_pct": 32.7}, "2025-05": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 597.0, "gross_revenue_amazon": 597.0, "gross_revenue_noon": 0.0, "asp": 199.0, "cogs": 239.21, "fees": -127.21, "ad_spend_allocated": -272.46, "gross_margin": 357.79, "margin_pct": 59.9, "net_profit": -41.88, "net_margin_pct": -7.0}, "2025-06": {"units": 6, "units_amazon": 6, "units_noon": 0, "gross_revenue": 1154.2, "gross_revenue_amazon": 1154.2, "gross_revenue_noon": 0.0, "asp": 192.37, "cogs": 478.42, "fees": -368.95, "ad_spend_allocated": -283.78, "gross_margin": 675.78, "margin_pct": 58.5, "net_profit": 23.05, "net_margin_pct": 2.0}, "2025-08": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 179.1, "gross_revenue_amazon": 179.1, "gross_revenue_noon": 0.0, "asp": 179.1, "cogs": 79.74, "fees": -49.75, "ad_spend_allocated": -52.31, "gross_margin": 99.36, "margin_pct": 55.5, "net_profit": -2.7, "net_margin_pct": -1.5}, "2025-09": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 378.1, "gross_revenue_amazon": 378.1, "gross_revenue_noon": 0.0, "asp": 189.05, "cogs": 159.47, "fees": 1283.83, "ad_spend_allocated": -383.82, "gross_margin": 218.63, "margin_pct": 57.8, "net_profit": 1118.64, "net_margin_pct": 295.9}, "2025-11": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 199.0, "gross_revenue_amazon": 199.0, "gross_revenue_noon": 0.0, "asp": 199.0, "cogs": 79.74, "fees": -64.71, "ad_spend_allocated": -82.52, "gross_margin": 119.26, "margin_pct": 59.9, "net_profit": -27.97, "net_margin_pct": -14.1}, "2025-12": {"units": 3, "units_amazon": 3, "units_noon": 0, "gross_revenue": 477.0, "gross_revenue_amazon": 477.0, "gross_revenue_noon": 0.0, "asp": 159.0, "cogs": 239.21, "fees": -140.65, "ad_spend_allocated": -326.41, "gross_margin": 237.79, "margin_pct": 49.9, "net_profit": -229.27, "net_margin_pct": -48.1}}}, {"sku": "TJ-FDH7-PNAI", "cost_per_unit": 95.76, "units": 29, "units_amazon": 3, "units_noon": 26, "gross_revenue": 4891.0, "gross_revenue_amazon": 617.0, "gross_revenue_noon": 4274.0, "asp": 168.66, "cogs": 2681.27, "fees": -1140.19, "ad_spend_allocated": -1339.74, "gross_margin": 2209.73, "margin_pct": 45.2, "net_profit": -270.2, "net_margin_pct": -5.5, "months": {"2025-09": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 239.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 239.0, "asp": 239.0, "cogs": 95.76, "fees": -52.57, "ad_spend_allocated": -31.89, "gross_margin": 143.24, "margin_pct": 59.9, "net_profit": 58.78, "net_margin_pct": 24.6}, "2025-10": {"units": 2, "units_amazon": 2, "units_noon": 0, "gross_revenue": 458.0, "gross_revenue_amazon": 458.0, "gross_revenue_noon": 0.0, "asp": 229.0, "cogs": 95.76, "fees": -128.84, "ad_spend_allocated": -144.89, "gross_margin": 362.24, "margin_pct": 79.1, "net_profit": 88.51, "net_margin_pct": 19.3}, "2025-11": {"units": 3, "units_amazon": 0, "units_noon": 3, "gross_revenue": 517.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 517.0, "asp": 172.33, "cogs": 287.28, "fees": -105.4, "ad_spend_allocated": -110.88, "gross_margin": 229.72, "margin_pct": 44.4, "net_profit": 13.44, "net_margin_pct": 2.6}, "2025-12": {"units": 23, "units_amazon": 1, "units_noon": 22, "gross_revenue": 3677.0, "gross_revenue_amazon": 159.0, "gross_revenue_noon": 3518.0, "asp": 159.87, "cogs": 2202.48, "fees": -928.28, "ad_spend_allocated": -1120.77, "gross_margin": 1474.52, "margin_pct": 40.1, "net_profit": -574.53, "net_margin_pct": -15.6}}}, {"sku": "RH1008BSZ", "cost_per_unit": 81.46, "units": 12, "units_amazon": 1, "units_noon": 11, "gross_revenue": 1309.0, "gross_revenue_amazon": 109.0, "gross_revenue_noon": 1200.0, "asp": 109.08, "cogs": 977.52, "fees": -359.43, "ad_spend_allocated": -317.64, "gross_margin": 331.48, "margin_pct": 25.3, "net_profit": -345.59, "net_margin_pct": -26.4, "months": {"2025-11": {"units": 8, "units_amazon": 0, "units_noon": 8, "gross_revenue": 823.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 823.0, "asp": 102.88, "cogs": 651.68, "fees": -230.43, "ad_spend_allocated": -176.51, "gross_margin": 171.32, "margin_pct": 20.8, "net_profit": -235.62, "net_margin_pct": -28.6}, "2025-12": {"units": 4, "units_amazon": 1, "units_noon": 3, "gross_revenue": 486.0, "gross_revenue_amazon": 109.0, "gross_revenue_noon": 377.0, "asp": 121.5, "cogs": 325.84, "fees": -136.99, "ad_spend_allocated": -183.04, "gross_margin": 160.16, "margin_pct": 33.0, "net_profit": -159.87, "net_margin_pct": -32.9}}}, {"sku": "RH228DBPZ", "cost_per_unit": 37.99, "units": 10, "units_amazon": 0, "units_noon": 10, "gross_revenue": 1172.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 1172.0, "asp": 117.2, "cogs": 379.9, "fees": -289.61, "ad_spend_allocated": -284.41, "gross_margin": 792.1, "margin_pct": 67.6, "net_profit": 218.08, "net_margin_pct": 18.6, "months": {"2025-12": {"units": 6, "units_amazon": 0, "units_noon": 6, "gross_revenue": 654.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 654.0, "asp": 109.0, "cogs": 227.94, "fees": -166.02, "ad_spend_allocated": -188.13, "gross_margin": 426.06, "margin_pct": 65.1, "net_profit": 71.91, "net_margin_pct": 11.0}, "2025-11": {"units": 2, "units_amazon": 0, "units_noon": 2, "gross_revenue": 218.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 218.0, "asp": 109.0, "cogs": 75.98, "fees": -55.34, "ad_spend_allocated": -46.76, "gross_margin": 142.02, "margin_pct": 65.1, "net_profit": 39.92, "net_margin_pct": 18.3}, "2025-10": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 141.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 141.0, "asp": 141.0, "cogs": 37.99, "fees": -32.71, "ad_spend_allocated": -28.3, "gross_margin": 103.01, "margin_pct": 73.1, "net_profit": 42.0, "net_margin_pct": 29.8}, "2025-09": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 159.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 159.0, "asp": 159.0, "cogs": 37.99, "fees": -35.54, "ad_spend_allocated": -21.22, "gross_margin": 121.01, "margin_pct": 76.1, "net_profit": 64.25, "net_margin_pct": 40.4}}}, {"sku": "RH188SBPZ", "cost_per_unit": 11.05, "units": 5, "units_amazon": 2, "units_noon": 3, "gross_revenue": 374.1, "gross_revenue_amazon": 167.1, "gross_revenue_noon": 207.0, "asp": 74.82, "cogs": 55.24, "fees": -104.81, "ad_spend_allocated": -109.64, "gross_margin": 318.86, "margin_pct": 85.2, "net_profit": 104.41, "net_margin_pct": 27.9, "months": {"2025-08": {"units": 1, "units_amazon": 1, "units_noon": 0, "gross_revenue": 98.1, "gross_revenue_amazon": 98.1, "gross_revenue_noon": 0.0, "asp": 98.1, "cogs": 11.05, "fees": -31.49, "ad_spend_allocated": -28.65, "gross_margin": 87.05, "margin_pct": 88.7, "net_profit": 26.91, "net_margin_pct": 27.4}, "2025-12": {"units": 4, "units_amazon": 1, "units_noon": 3, "gross_revenue": 276.0, "gross_revenue_amazon": 69.0, "gross_revenue_noon": 207.0, "asp": 69.0, "cogs": 44.2, "fees": -84.94, "ad_spend_allocated": -106.76, "gross_margin": 231.8, "margin_pct": 84.0, "net_profit": 40.1, "net_margin_pct": 14.5}}}, {"sku": "AEROSC-6", "cost_per_unit": 149.83, "units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 199.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 199.0, "asp": 199.0, "cogs": 149.83, "fees": -47.11, "ad_spend_allocated": -57.24, "gross_margin": 49.17, "margin_pct": 24.7, "net_profit": -55.18, "net_margin_pct": -27.7, "months": {"2025-12": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 199.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 199.0, "asp": 199.0, "cogs": 149.83, "fees": -47.11, "ad_spend_allocated": -57.24, "gross_margin": 49.17, "margin_pct": 24.7, "net_profit": -55.18, "net_margin_pct": -27.7}}}, {"sku": "RH218SBPZ", "cost_per_unit": 31.84, "units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 99.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 99.0, "asp": 99.0, "cogs": 31.84, "fees": -25.04, "ad_spend_allocated": -21.23, "gross_margin": 67.16, "margin_pct": 67.8, "net_profit": 20.89, "net_margin_pct": 21.1, "months": {"2025-11": {"units": 1, "units_amazon": 0, "units_noon": 1, "gross_revenue": 99.0, "gross_revenue_amazon": 0.0, "gross_revenue_noon": 99.0, "asp": 99.0, "cogs": 31.84, "fees": -25.04, "ad_spend_allocated": -21.23, "gross_margin": 67.16, "margin_pct": 67.8, "net_profit": 20.89, "net_margin_pct": 21.1}}}], "inventory": [{"sku": "2D-JIOC-DYZ2", "asin": "B0DM1ZWBDF", "name": "LITTLE MOMMY Single Breast Pump", "az_inv": 9, "noon_inv": 0, "wh_inv": 269, "total_inv": 278, "units_sold_ytd": 88, "avg_daily_sales": 0.241, "reorder_point_90d": 21.7, "days_of_cover": 1153.1, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "2X-VGKU-V16T", "asin": "B0F8VKTHCV", "name": "AEROFRY Digital Air Fryer 6L Panoramic glass, Oil Free Healthy Cooker with multiple Presets, Non-Stick Basket with High speed air technology- Black | \u0642\u0644\u0627\u064a\u0629 \u0647\u0648\u0627\u0626\u064a\u0629 \u0631\u0642\u0645\u064a\u0629 \u0628\u062f\u0648\u0646 \u0632\u064a\u062a", "az_inv": 0, "noon_inv": 0, "wh_inv": 0, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "2Z-0A8G-EGU0", "asin": "B0DKNQ2KT8", "name": "BIRTH Hands Free Single Electric Breast Pump S12A, Wearable. Portable and Discreet Pump with LED display & Storage Bag, Quiet Operation - 3 pumping Modes & 12 Levels of Suction, 24 mm Flange (1 Unit)", "az_inv": 0, "noon_inv": 0, "wh_inv": 0, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "62-0VFC-64SJ", "asin": "B0D3QKKSM8", "name": "AEROFRY 9L Dual-Zone Air Fryer", "az_inv": 15, "noon_inv": 22, "wh_inv": 482, "total_inv": 519, "units_sold_ytd": 80, "avg_daily_sales": 0.219, "reorder_point_90d": 19.7, "days_of_cover": 2367.9, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "7J-5E02-AAAN", "asin": "B0GCZSMQKM", "name": "BIRTH Bluetooth Double Pump S39", "az_inv": 6, "noon_inv": 0, "wh_inv": 16, "total_inv": 22, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "7Q-285B-KTIO", "asin": "B0F66YFN52", "name": "Aerofry - 5.7L Digital Air Fryer with Smart Food Scale \u2013 Large Capacity, Touchscreen, 8 Presets, Oil-Free Hot Air Circulation | \u0645\u0642\u0644\u0627\u0629 \u0623\u064a\u0631\u0648\u0641\u0631\u0627\u064a \u0627\u0644\u0631\u0642\u0645\u064a\u0629 5.7 \u0644\u062a\u0631 \u0645\u0639 \u0645\u0642\u064a\u0627\u0633 \u0637\u0639\u0627\u0645 \u0630\u0643\u064a", "az_inv": 0, "noon_inv": 0, "wh_inv": 0, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "AEROSC-6", "asin": "B0F66YFN52", "name": "Aerofry 5.7L Smart Scale Fryer", "az_inv": 5, "noon_inv": 12, "wh_inv": 362, "total_inv": 379, "units_sold_ytd": 1, "avg_daily_sales": 0.003, "reorder_point_90d": 0.2, "days_of_cover": 138335.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "CG-7IMP-NEVU", "asin": "B0GCZSMQKM", "name": "BIRTH Hands-Free Bluetooth App Controlled Double Electric Breast Pump S39, Wearable, Portable & Quiet with LED Diplay with 4 Modes &12 Levels of suction, 24MM Flanges (2 Units)", "az_inv": 0, "noon_inv": 0, "wh_inv": 0, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "D4-2UK7-AM2Z", "asin": "B0DKNQ2KT8", "name": "BIRTH Single Breast Pump S12A", "az_inv": 5, "noon_inv": 0, "wh_inv": 122, "total_inv": 127, "units_sold_ytd": 26, "avg_daily_sales": 0.071, "reorder_point_90d": 6.4, "days_of_cover": 1782.9, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "HV-JE48-ORFB", "asin": "B0DKNQDQSC", "name": "BIRTH Hands Free Double Electric Breast Pump S39, Wearable, Portable & Quiet with Easy & Intuitive Design for On-the-Go feeding, LED Display with 4 Modes &12 Levels of suction, 24MM Flanges (2 Units)", "az_inv": 0, "noon_inv": 0, "wh_inv": 0, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "LN-WRP7-RIMK", "asin": "B0DKNQ8PYZ", "name": "BIRTH Single Breast Pump S39", "az_inv": 12, "noon_inv": 0, "wh_inv": 164, "total_inv": 176, "units_sold_ytd": 77, "avg_daily_sales": 0.211, "reorder_point_90d": 19.0, "days_of_cover": 834.3, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "NR-O1LQ-E1UK", "asin": "B0DKNP5WG7", "name": "BIRTH Double Breast Pump S12A", "az_inv": 5, "noon_inv": 3, "wh_inv": 115, "total_inv": 123, "units_sold_ytd": 36, "avg_daily_sales": 0.099, "reorder_point_90d": 8.9, "days_of_cover": 1247.1, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "PY-51U9-NDO7", "asin": "B0DKNQDQSC", "name": "BIRTH Double Breast Pump S39", "az_inv": 13, "noon_inv": 0, "wh_inv": 399, "total_inv": 412, "units_sold_ytd": 117, "avg_daily_sales": 0.321, "reorder_point_90d": 28.8, "days_of_cover": 1285.3, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH1008BSZ", "asin": "B0F66HSKPJ", "name": "Birth Bottle Sterilizer RH1008", "az_inv": 5, "noon_inv": 7, "wh_inv": 66, "total_inv": 78, "units_sold_ytd": 12, "avg_daily_sales": 0.033, "reorder_point_90d": 3.0, "days_of_cover": 2372.5, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH188SBPZ", "asin": "B0F6334622", "name": "Birth Manual Pump RH188", "az_inv": 5, "noon_inv": 33, "wh_inv": 100, "total_inv": 138, "units_sold_ytd": 5, "avg_daily_sales": 0.014, "reorder_point_90d": 1.2, "days_of_cover": 10074.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH218SBPZ", "asin": "B0F632CZSY", "name": "Birth Electric Pump RH218", "az_inv": 5, "noon_inv": 13, "wh_inv": 26, "total_inv": 44, "units_sold_ytd": 1, "avg_daily_sales": 0.003, "reorder_point_90d": 0.2, "days_of_cover": 16060.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "RH228DBPZ", "asin": "B0F62YR6H6", "name": "Birth Electric Pump RH228", "az_inv": 0, "noon_inv": 25, "wh_inv": 53, "total_inv": 78, "units_sold_ytd": 10, "avg_daily_sales": 0.027, "reorder_point_90d": 2.5, "days_of_cover": 2847.0, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "S39DBPDB", "asin": "B0DM1JLVRM", "name": "LITTLE MOMMY Double Breast Pump", "az_inv": 12, "noon_inv": 3, "wh_inv": 271, "total_inv": 286, "units_sold_ytd": 32, "avg_daily_sales": 0.088, "reorder_point_90d": 7.9, "days_of_cover": 3262.2, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "TJ-FDH7-PNAI", "asin": "B0F8VKTHCV", "name": "AEROFRY Air Fryer 6L", "az_inv": 21, "noon_inv": 56, "wh_inv": 123, "total_inv": 200, "units_sold_ytd": 29, "avg_daily_sales": 0.079, "reorder_point_90d": 7.2, "days_of_cover": 2517.2, "suggested_reorder_qty": 0, "needs_reorder": false}, {"sku": "VG-HNBC-EKIS", "asin": "B0F8VP8PS2", "name": "Airfryer 10L", "az_inv": 0, "noon_inv": 0, "wh_inv": null, "total_inv": 0, "units_sold_ytd": 0, "avg_daily_sales": 0.0, "reorder_point_90d": 0.0, "days_of_cover": null, "suggested_reorder_qty": 0, "needs_reorder": false}], "cost_table": [{"sku": "7J-5E02-AAAN", "is_estimated": false, "product_cost_usd": 48.97, "freight_usd": 4.9, "duty_usd": 2.69, "vat_usd": 2.83, "landed_cost_usd": 59.39, "landed_cost": 218.1, "recommended_asp_60pct_margin": 545.26, "actual_asp": null, "wac_revised": false, "name": "BIRTH Bluetooth Double Pump S39", "margin_at_actual_pct": null}, {"sku": "PY-51U9-NDO7", "is_estimated": false, "product_cost_usd": 43.84, "freight_usd": 4.38, "duty_usd": 2.41, "vat_usd": 2.53, "landed_cost_usd": 53.16, "landed_cost": 195.25, "recommended_asp_60pct_margin": 488.12, "actual_asp": 583.38, "wac_revised": false, "name": "BIRTH Double Breast Pump S39", "margin_at_actual_pct": 66.5}, {"sku": "VG-HNBC-EKIS", "is_estimated": false, "product_cost_usd": 38.79, "freight_usd": 3.88, "duty_usd": 2.13, "vat_usd": 2.24, "landed_cost_usd": 47.04, "landed_cost": 172.77, "recommended_asp_60pct_margin": 431.92, "actual_asp": null, "wac_revised": false, "name": "Airfryer 10L", "margin_at_actual_pct": null}, {"sku": "NR-O1LQ-E1UK", "is_estimated": false, "product_cost_usd": 36.78, "freight_usd": 3.68, "duty_usd": 2.02, "vat_usd": 2.12, "landed_cost_usd": 44.61, "landed_cost": 163.82, "recommended_asp_60pct_margin": 409.56, "actual_asp": 343.73, "wac_revised": false, "name": "BIRTH Double Breast Pump S12A", "margin_at_actual_pct": 52.3}, {"sku": "AEROSC-6", "is_estimated": false, "product_cost_usd": 33.64, "freight_usd": 3.36, "duty_usd": 1.85, "vat_usd": 1.94, "landed_cost_usd": 40.8, "landed_cost": 149.83, "recommended_asp_60pct_margin": 374.57, "actual_asp": 199.0, "wac_revised": false, "name": "Aerofry 5.7L Smart Scale Fryer", "margin_at_actual_pct": 24.7}, {"sku": "62-0VFC-64SJ", "is_estimated": false, "product_cost_usd": 32.9, "freight_usd": 3.29, "duty_usd": 1.81, "vat_usd": 1.9, "landed_cost_usd": 39.89, "landed_cost": 146.51, "recommended_asp_60pct_margin": 366.27, "actual_asp": 368.05, "wac_revised": false, "name": "AEROFRY 9L Dual-Zone Air Fryer", "margin_at_actual_pct": 60.2}, {"sku": "S39DBPDB", "is_estimated": false, "product_cost_usd": 29.4, "freight_usd": 2.94, "duty_usd": 1.62, "vat_usd": 1.7, "landed_cost_usd": 35.66, "landed_cost": 130.95, "recommended_asp_60pct_margin": 327.37, "actual_asp": 300.49, "wac_revised": false, "name": "LITTLE MOMMY Double Breast Pump", "margin_at_actual_pct": 56.4}, {"sku": "LN-WRP7-RIMK", "is_estimated": false, "product_cost_usd": 21.93, "freight_usd": 2.19, "duty_usd": 1.21, "vat_usd": 1.27, "landed_cost_usd": 26.6, "landed_cost": 97.69, "recommended_asp_60pct_margin": 244.23, "actual_asp": 289.66, "wac_revised": false, "name": "BIRTH Single Breast Pump S39", "margin_at_actual_pct": 66.3}, {"sku": "TJ-FDH7-PNAI", "is_estimated": false, "product_cost_usd": 21.5, "freight_usd": 2.15, "duty_usd": 1.18, "vat_usd": 1.24, "landed_cost_usd": 26.07, "landed_cost": 95.76, "recommended_asp_60pct_margin": 239.39, "actual_asp": 168.66, "wac_revised": false, "name": "AEROFRY Air Fryer 6L", "margin_at_actual_pct": 43.2}, {"sku": "RH1008BSZ", "is_estimated": false, "product_cost_usd": 18.29, "freight_usd": 1.83, "duty_usd": 1.01, "vat_usd": 1.06, "landed_cost_usd": 22.18, "landed_cost": 81.46, "recommended_asp_60pct_margin": 203.65, "actual_asp": 109.08, "wac_revised": false, "name": "Birth Bottle Sterilizer RH1008", "margin_at_actual_pct": 25.3}, {"sku": "D4-2UK7-AM2Z", "is_estimated": false, "product_cost_usd": 17.9, "freight_usd": 1.79, "duty_usd": 0.98, "vat_usd": 1.03, "landed_cost_usd": 21.71, "landed_cost": 79.74, "recommended_asp_60pct_margin": 199.34, "actual_asp": 209.72, "wac_revised": false, "name": "BIRTH Single Breast Pump S12A", "margin_at_actual_pct": 62.0}, {"sku": "2D-JIOC-DYZ2", "is_estimated": false, "product_cost_usd": 15.42, "freight_usd": 1.54, "duty_usd": 0.85, "vat_usd": 0.89, "landed_cost_usd": 18.7, "landed_cost": 68.69, "recommended_asp_60pct_margin": 171.72, "actual_asp": 148.05, "wac_revised": false, "name": "LITTLE MOMMY Single Breast Pump", "margin_at_actual_pct": 53.6}, {"sku": "RH228DBPZ", "is_estimated": false, "product_cost_usd": 8.53, "freight_usd": 0.85, "duty_usd": 0.47, "vat_usd": 0.49, "landed_cost_usd": 10.34, "landed_cost": 37.99, "recommended_asp_60pct_margin": 94.98, "actual_asp": 117.2, "wac_revised": false, "name": "Birth Electric Pump RH228", "margin_at_actual_pct": 67.6}, {"sku": "RH218SBPZ", "is_estimated": false, "product_cost_usd": 7.15, "freight_usd": 0.71, "duty_usd": 0.39, "vat_usd": 0.41, "landed_cost_usd": 8.67, "landed_cost": 31.84, "recommended_asp_60pct_margin": 79.61, "actual_asp": 99.0, "wac_revised": false, "name": "Birth Electric Pump RH218", "margin_at_actual_pct": 67.8}, {"sku": "RH188SBPZ", "is_estimated": false, "product_cost_usd": 2.48, "freight_usd": 0.25, "duty_usd": 0.14, "vat_usd": 0.14, "landed_cost_usd": 3.01, "landed_cost": 11.05, "recommended_asp_60pct_margin": 27.61, "actual_asp": 74.82, "wac_revised": false, "name": "Birth Manual Pump RH188", "margin_at_actual_pct": 85.2}]};
+
+  // ---------- CHANNEL SWITCHING ----------
+  const channels = [
+    { btn: "channelBtnAmazon", panel: "channelAmazon" },
+    { btn: "channelBtnNoon", panel: "channelNoon" },
+    { btn: "channelBtnOverall", panel: "channelOverall" },
+  ];
+  channels.forEach(c => {
+    document.getElementById(c.btn).addEventListener("click", () => {
+      channels.forEach(o => {
+        document.getElementById(o.btn).classList.toggle("active", o === c);
+        document.getElementById(o.panel).classList.toggle("active", o === c);
+      });
+    });
+  });
+  const subTabs = [
+    [["noonTabBtnPnl","noonTabPnl"],["noonTabBtnInventory","noonTabInventory"]],
+    [["overallTabBtnPnl","overallTabPnl"],["overallTabBtnInventory","overallTabInventory"]],
+  ];
+  subTabs.forEach(group => {
+    group.forEach(([btnId, panelId]) => {
+      document.getElementById(btnId).addEventListener("click", () => {
+        group.forEach(([b, p]) => {
+          document.getElementById(b).classList.toggle("active", b === btnId);
+          document.getElementById(p).classList.toggle("active", b === btnId);
+        });
+      });
+    });
+  });
+
+  const monthShort = m => { const d = m.split("-"); return ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+d[1]]; };
+
+  function renderChannelKpis(elId, ytd) {
+    const el = document.getElementById(elId);
+    const netCls = ytd.net_profit < 0 ? " neg" : "";
+    el.innerHTML = `
+      <div class="kpi accent-critical"><span class="label">Gross revenue (YTD)</span><span class="value">${fmt(ytd.gross_revenue)}</span></div>
+      <div class="kpi${ytd.net_profit < 0 ? " accent-critical" : " accent-good"}"><span class="label">Net profit (YTD)</span><span class="value${netCls}">${ytd.net_profit < 0 ? "-" : ""}${fmt(Math.abs(ytd.net_profit))}</span></div>
+      <div class="kpi accent-amber"><span class="label">Ad spend (YTD)</span><span class="value">${fmt(Math.abs(ytd.ad_spend || 0))}</span></div>
+      <div class="kpi"><span class="label">Units (YTD)</span><span class="value">${ytd.units.toLocaleString()}</span></div>
+      <div class="kpi"><span class="label">Revenue / day</span><span class="value">${fmt(ytd.revenue_per_day)}</span></div>
+    `;
+  }
+  renderChannelKpis("noonKpis", noonData.ytd);
+  renderChannelKpis("overallKpis", overallData.ytd);
+
+  // ---------- Generic trend chart + waterfall (Noon / Overall) ----------
+  // Same visual logic as the Amazon tab's own trend chart (makeTrendCol / waterfall
+  // steps above), generalized to take any {month, revenue, profitBefore, profit}[]
+  // array instead of Amazon's hardcoded `monthly`/`ytdBar` consts - the Amazon tab's
+  // own chart code is untouched, this is a separate, parallel implementation so there
+  // is zero risk of regressing it.
+  function renderGenericTrend(containerId, rows, ytdRow) {
+    const trendEl = document.getElementById(containerId);
+    if (!trendEl) return;
+    const aboveMax = Math.max(1, ...rows.map(d => Math.max(d.revenue, d.profitBefore, d.profit)));
+    const belowMax = Math.max(0, ...rows.map(d => Math.max(0, -d.profit)));
+    const totalSpan = aboveMax + belowMax;
+    const baselineFrac = belowMax / totalSpan;
+
+    const gridEl = document.createElement("div");
+    gridEl.className = "trend-grid";
+    trendEl.appendChild(gridEl);
+    const baselineEl = document.createElement("div");
+    baselineEl.className = "trend-baseline";
+    baselineEl.style.bottom = (baselineFrac * 100) + "%";
+    trendEl.appendChild(baselineEl);
+    const colsEl = document.createElement("div");
+    colsEl.className = "trend-cols";
+    trendEl.appendChild(colsEl);
+
+    function makeCol(d, span, base, isYtd) {
+      const revH = (d.revenue / span) * 100;
+      const beforeH = (d.profitBefore / span) * 100;
+      const isNeg = d.profit < 0;
+      const netH = (Math.abs(d.profit) / span) * 100;
+      const wrap = document.createElement("div");
+      wrap.className = "trend-month" + (isYtd ? " is-ytd" : "");
+      const revBar = document.createElement("div");
+      revBar.className = "bar revenue";
+      revBar.style.bottom = (base * 100) + "%";
+      revBar.style.height = revH + "%";
+      const beforeBar = document.createElement("div");
+      beforeBar.className = "bar profit-before";
+      beforeBar.style.bottom = (base * 100) + "%";
+      beforeBar.style.height = beforeH + "%";
+      const netBar = document.createElement("div");
+      netBar.className = "bar net-profit" + (isNeg ? " is-neg" : "");
+      netBar.style.bottom = (isNeg ? ((base * 100) - netH) : (base * 100)) + "%";
+      netBar.style.height = netH + "%";
+      const tip = document.createElement("div");
+      tip.className = "tooltip";
+      tip.innerHTML = `
+        <div class="t-row"><span><span class="t-swatch" style="background:var(--series-1)"></span>Revenue</span><b>&nbsp;${fmt(d.revenue)}</b></div>
+        <div class="t-row"><span><span class="t-swatch" style="background:var(--series-2)"></span>Profit before ads</span><b>&nbsp;${fmt(d.profitBefore)}</b></div>
+        <div class="t-row"><span><span class="t-swatch" style="background:${isNeg ? 'var(--critical)' : 'var(--good)'}"></span>Net profit</span><b>&nbsp;${fmt(d.profit)}</b></div>
+      `;
+      wrap.appendChild(tip);
+      wrap.appendChild(revBar);
+      wrap.appendChild(beforeBar);
+      wrap.appendChild(netBar);
+      return wrap;
+    }
+    rows.forEach(d => colsEl.appendChild(makeCol(d, totalSpan, baselineFrac, false)));
+    const ytdAbove = Math.max(1, ytdRow.revenue, ytdRow.profitBefore, ytdRow.profit);
+    const ytdBelow = Math.max(0, -ytdRow.profit);
+    const ytdSpan = ytdAbove + ytdBelow;
+    const ytdBase = ytdBelow / ytdSpan;
+    colsEl.appendChild(makeCol(ytdRow, ytdSpan, ytdBase, true));
+
+    const labelsEl = document.createElement("div");
+    labelsEl.className = "trend-labels";
+    rows.concat([ytdRow]).forEach(d => {
+      const s = document.createElement("span");
+      s.textContent = d.m;
+      if (d === ytdRow) s.style.fontWeight = "800";
+      labelsEl.appendChild(s);
+    });
+    trendEl.parentNode.insertBefore(labelsEl, trendEl.nextSibling);
+  }
+
+  function renderGenericWaterfall(containerId, steps) {
+    const wfEl = document.getElementById(containerId);
+    if (!wfEl) return;
+    const wfMax = Math.max(1, ...steps.map(s => Math.abs(s.value)));
+    steps.forEach(s => {
+      const h = Math.max(6, (Math.abs(s.value) / wfMax) * 100);
+      const isTotal = s.type.includes("total");
+      const pct = (s.value / wfMax * 100);
+      const pctStr = (pct >= 0 ? "" : "-") + Math.abs(pct).toFixed(1) + "%";
+      const col = document.createElement("div");
+      col.className = "wf-step";
+      col.innerHTML = `
+        <span class="wf-value ${s.value < 0 ? 'neg' : ''}">${s.value < 0 ? "-" : ""}${fmt(Math.abs(s.value))}</span>
+        <span class="wf-pct ${s.value < 0 ? 'neg' : ''}">${pctStr}</span>
+        <div class="wf-bar-col">
+          <div class="wf-bar ${isTotal ? (s.type.includes('final') ? 'total final' : 'total') : 'drop'}" style="height:${h}%"></div>
+        </div>
+        <span class="wf-label">${s.label}</span>
+      `;
+      wfEl.appendChild(col);
+    });
+  }
+
+  function noonTrendRows() {
+    return noonData.monthly.map(m => ({
+      m: monthShort(m.month), revenue: m.gross_revenue, profitBefore: m.net_profit - m.ad_spend, profit: m.net_profit,
+    }));
+  }
+  renderGenericTrend("noonTrendChart", noonTrendRows(), {
+    m: "YTD", revenue: noonData.ytd.gross_revenue, profitBefore: noonData.ytd.net_profit - noonData.ytd.ad_spend, profit: noonData.ytd.net_profit,
+  });
+  renderGenericWaterfall("noonWaterfall", [
+    { label: "Gross revenue", value: noonData.ytd.gross_revenue, type: "total" },
+    { label: "Fees & adjustments", value: noonData.ytd.other_fees, type: "drop" },
+    { label: "Ad spend", value: noonData.ytd.ad_spend, type: "drop" },
+    { label: "Net proceeds", value: noonData.ytd.net_proceeds, type: "total final" },
+  ]);
+
+  function overallTrendRows() {
+    return overallData.monthly.map(m => ({
+      m: monthShort(m.month), revenue: m.gross_revenue, profitBefore: m.net_profit - m.ad_spend, profit: m.net_profit,
+    }));
+  }
+  renderGenericTrend("overallTrendChart", overallTrendRows(), {
+    m: "YTD", revenue: overallData.ytd.gross_revenue, profitBefore: overallData.ytd.net_profit - overallData.ytd.ad_spend, profit: overallData.ytd.net_profit,
+  });
+  renderGenericWaterfall("overallWaterfall", [
+    { label: "Gross revenue", value: overallData.ytd.gross_revenue, type: "total" },
+    { label: "Amazon fees, refunds, storage", value: overallData.ytd.other_costs_amazon_incl_refunds, type: "drop" },
+    { label: "Noon fees & adjustments", value: overallData.ytd.other_costs_noon, type: "drop" },
+    { label: "Ad spend", value: overallData.ytd.ad_spend, type: "drop" },
+    { label: "Net proceeds", value: overallData.ytd.net_proceeds, type: "total final" },
+  ]);
+
+  // Appends <th> elements to the EXISTING header <tr> (which already has the fixed
+  // Line-item/YTD-Total columns) - fixed 2026-10-04: the previous version replaced a
+  // tbody-tag placeholder that had been nested inside the <tr>, which is invalid HTML
+  // (a tbody element can't be a child of a tr element); browsers silently relocate it
+  // during parsing, which is what produced the garbled/misaligned header row the user
+  // screenshotted. Appending directly to a real <tr> has no such hazard. (Note: do NOT
+  // write out that removed tag name in angle brackets anywhere in this file's comments -
+  // splice_and_validate.py's structural check does a naive text count of that tag's
+  // open/close markers across the WHOLE file, comments included, and a bracketed prose
+  // mention trips it exactly like the already-documented paren/quote false positives -
+  // spell it as plain "tbody" with no brackets if you need to reference it again.)
+  function monthlyHeaderRow(elId, months) {
+    const tr = document.getElementById(elId);
+    months.forEach(m => { const th = document.createElement("th"); th.textContent = monthShort(m); tr.appendChild(th); });
+  }
+  monthlyHeaderRow("noonMonthlyHeaderRow", noonData.months);
+  monthlyHeaderRow("overallMonthlyHeaderRow", overallData.months);
+
+  // Negative-value coloring (the "neg" class -> red, same as every Amazon-tab money
+  // cell) is computed PER CELL from that cell's own sign - never hardcoded - same
+  // convention as cellMoney's "ytd" + (d.net_profit < 0 ? " neg" : "") pattern above.
+  const negCls = (v, base) => (base ? base + " " : "") + (v < 0 ? "neg" : "");
+  function moneyRow(label, months, byMonth, ytdVal, cls) {
+    const cells = months.map(m => cellN0(byMonth(m), negCls(byMonth(m) || 0, ""))).join("");
+    return `<tr${cls ? ` class="${cls}"` : ""}><td>${label}</td>${cellN0(ytdVal, negCls(ytdVal, "ytd"))}${cells}</tr>`;
+  }
+  function subRow(label, months, byMonth) {
+    const cells = months.map(m => cellN0(byMonth(m), negCls(byMonth(m) || 0, ""))).join("");
+    const ytdVal = months.reduce((s, m) => s + (byMonth(m) || 0), 0);
+    return `<tr class="sub-row"><td>${label}</td>${cellN0(ytdVal, negCls(ytdVal, "ytd"))}${cells}</tr>`;
+  }
+
+  function renderNoonMonthly() {
+    const byMonth = key => m => { const row = noonData.monthly.find(r => r.month === m); return row ? row[key] : null; };
+    const byCb = key => m => { const row = noonData.monthly.find(r => r.month === m); return row && row.cost_breakdown ? row.cost_breakdown[key] : null; };
+    const rows = [];
+    rows.push(moneyRow("Gross revenue", noonData.months, byMonth("gross_revenue"), noonData.ytd.gross_revenue, "total"));
+    rows.push(moneyRow("COGS", noonData.months, m => -Math.abs(byMonth("cogs")(m) || 0), -Math.abs(noonData.ytd.cogs), ""));
+    const gmByMonth = m => (byMonth("gross_revenue")(m) || 0) - (byMonth("cogs")(m) || 0);
+    rows.push(moneyRow("Gross margin", noonData.months, gmByMonth, noonData.ytd.gross_revenue - noonData.ytd.cogs, "total"));
+    rows.push(moneyRow("Other fees (referral, fulfillment, etc.)", noonData.months, m => (byMonth("net_before_fees")(m) || 0) - (byMonth("gross_revenue")(m) || 0),
+      noonData.monthly.reduce((s, r) => s + (r.net_before_fees - r.gross_revenue), 0), ""));
+    rows.push(subRow("Referral fee", noonData.months, byCb("referral")));
+    rows.push(subRow("Fulfillment &amp; logistics fee", noonData.months, byCb("fulfillment")));
+    rows.push(subRow("Shipping credits", noonData.months, byCb("shipping_credits")));
+    rows.push(subRow("Other order fees", noonData.months, byCb("other_order_fees")));
+    rows.push(subRow("Order subsidies", noonData.months, byCb("order_subsidies")));
+    rows.push(subRow("Non-order subsidies", noonData.months, byCb("non_order_subsidies")));
+    rows.push(subRow("Others", noonData.months, byCb("others")));
+    rows.push(moneyRow("Advertising spend", noonData.months, byMonth("ad_spend"), noonData.ytd.ad_spend, ""));
+    rows.push(moneyRow("Net profit", noonData.months, byMonth("net_profit"), noonData.ytd.net_profit, "total final"));
+    document.getElementById("noonMonthlyBody").innerHTML = rows.join("\n");
+  }
+  renderNoonMonthly();
+
+  // SKU display name lookup, shared by Noon's and Overall's tables - built from
+  // overallData.cost_table since that covers every Amazon SKU with a SKU_SHORT_NAME
+  // (same lookup merge_dashboard_data.py's build_cost_table() already applied
+  // server-side); falls back to the raw sku/partner_sku string if unmapped.
+  const nameByAmzSku = Object.fromEntries(overallData.cost_table.map(c => [c.sku, c.name]));
+  const displayName = r => nameByAmzSku[r.amazon_sku || r.sku] || r.amazon_sku || r.sku || r.partner_sku;
+
+  // ---------- Generic Revenue-by-SKU matrix (Noon / Overall) ----------
+  // Same visual pattern as the Amazon tab's own SKU matrix (MoM up/down coloring,
+  // sku-name-cell/sku-code split) - generalized to take any months[]/rows[] instead of
+  // Amazon's baked gen_sku_matrix.html fragment, since Noon/Overall numbers refresh via
+  // this script's --data-only path, not a separate HTML fragment splice.
+  function renderGenericSkuMatrix(headerRowId, bodyId, months, rows, getId) {
+    // Header order MUST match the body row's cell order below (SKU, then each month,
+    // then YTD Total LAST) - a static "YTD Total" <th> placed right after SKU (like the
+    // Monthwise table's header) would misalign every column once the months are
+    // appended, since the body always puts its YTD cell last, matching the Amazon tab's
+    // own SKU matrix convention. Real bug, fixed 2026-10-04 (caught via user screenshot
+    // showing YTD Total empty/misaligned here).
+    const headerTr = document.getElementById(headerRowId);
+    months.forEach(m => { const th = document.createElement("th"); th.textContent = monthShort(m); headerTr.appendChild(th); });
+    const ytdTh = document.createElement("th");
+    ytdTh.className = "ytd";
+    ytdTh.textContent = "YTD Total";
+    headerTr.appendChild(ytdTh);
+    const tbody = document.getElementById(bodyId);
+    const htmlRows = rows.map(r => {
+      const cells = [`<td><div class="sku-name-cell"><span class="sku-name">${displayName(r)}</span><span class="sku-code">${getId(r)}</span></div></td>`];
+      let prevRev = null;
+      months.forEach(m => {
+        const mv = r.months[m];
+        const rev = mv ? mv.gross_revenue : null;
+        if (rev === null || rev === undefined) {
+          cells.push(`<td class="${prevRev === null ? "" : "mom-down"} cell-dash">–</td>`);
+        } else {
+          const cls = prevRev === null ? "" : (rev > prevRev ? "mom-up" : (rev < prevRev ? "mom-down" : ""));
+          cells.push(`<td class="${cls}"><span class="cell-rev">${Math.round(rev).toLocaleString()}</span><span class="cell-units">${mv.units}u</span></td>`);
+          prevRev = rev;
+        }
+      });
+      cells.push(`<td class="ytd"><span class="cell-rev">${Math.round(r.gross_revenue).toLocaleString()}</span><span class="cell-units">${r.units}u</span></td>`);
+      return `<tr>${cells.join("")}</tr>`;
+    });
+    tbody.innerHTML = htmlRows.join("\n");
+  }
+  renderGenericSkuMatrix("noonSkuMatrixHeaderRow", "noonSkuMatrixBody", noonData.months, noonData.sku_rows, r => r.partner_sku);
+  renderGenericSkuMatrix("overallSkuMatrixHeaderRow", "overallSkuMatrixBody", overallData.months, overallData.sku_rows, r => r.sku);
+
+  // ---------- Generic Product-wise Profitability (Noon / Overall), period-filterable ----------
+  // Columns are a SUBSET of the Amazon tab's own Product-wise Profitability table -
+  // Sellable returns/Damages/Net sales are dropped because neither Noon's finance
+  // export nor the Overall merge has return-disposition data the way Amazon's FBA
+  // Customer Returns report does (see this table's own section-note). Everything that
+  // IS real (Qty/ASP/Cost-per-unit/Gross revenue/COGS/Gross margin/Fees/Ad spend
+  // alloc/Net profit) uses the exact same cellN0/cellN1/cellPct formatting helpers and
+  // "neg" conventions as the Amazon tab, and the table itself uses the same
+  // frozen-column + period-filter-bar pattern (profit-frozen-4, one fewer frozen
+  // column than Amazon's since there's no Total Inv Qty column here).
+  function renderGenericProfitTable(tbodyId, filterBarId, rows, months, getId) {
+    function periodData(r, period) {
+      if (period === "YTD") return r;
+      if (period === "MTD") return r.months[months[months.length - 1]];
+      return r.months[period];
+    }
+    function render(period) {
+      const tbody = document.getElementById(tbodyId);
+      const items = rows.map(r => ({ r, d: periodData(r, period) })).filter(x => x.d && x.d.units);
+      const tot = { units: 0, gross_revenue: 0, cogs: 0, gross_margin: 0, fees: 0, ad_spend_allocated: 0, net_profit: 0 };
+      const htmlRows = items.map(({ r, d }) => {
+        tot.units += d.units || 0; tot.gross_revenue += d.gross_revenue || 0; tot.cogs += d.cogs || 0;
+        tot.gross_margin += d.gross_margin || 0; tot.fees += d.fees || 0; tot.ad_spend_allocated += d.ad_spend_allocated || 0;
+        tot.net_profit += d.net_profit || 0;
+        return `<tr><td title="${displayName(r)}">${displayName(r)}</td><td>${d.units || 0}</td>` +
+          cellN1(d.asp) + cellN1(r.cost_per_unit) +
+          cellN0(d.gross_revenue, "") + cellN0(-Math.abs(d.cogs), "neg") + cellN0(d.gross_margin, "") + cellPct(d.margin_pct) +
+          cellN0(d.fees, "") + cellN0(d.ad_spend_allocated, "") +
+          cellN0(d.net_profit, "ytd" + (d.net_profit < 0 ? " neg" : "")) + cellPct(d.net_margin_pct) + `</tr>`;
+      });
+      const totGM = tot.gross_revenue ? (tot.gross_margin / tot.gross_revenue * 100) : null;
+      const totNM = tot.gross_revenue ? (tot.net_profit / tot.gross_revenue * 100) : null;
+      const totAsp = tot.units ? (tot.gross_revenue / tot.units) : null;
+      const totCpu = tot.units ? (tot.cogs / tot.units) : null;
+      const totRow = `<tr class="total"><td>Total (${items.length} SKU${items.length === 1 ? "" : "s"})</td><td>${tot.units}</td>` +
+        cellN1(totAsp) + cellN1(totCpu) +
+        cellN0(tot.gross_revenue, "") + cellN0(-Math.abs(tot.cogs), "neg") + cellN0(tot.gross_margin, "") + cellPct(totGM) +
+        cellN0(tot.fees, "") + cellN0(tot.ad_spend_allocated, "") +
+        cellN0(tot.net_profit, "ytd" + (tot.net_profit < 0 ? " neg" : "")) + cellPct(totNM) + `</tr>`;
+      tbody.innerHTML = htmlRows.join("\n") + totRow;
+    }
+    const filterBarEl = document.getElementById(filterBarId);
+    const periods = months.concat(["MTD", "YTD"]);
+    periods.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "filter-btn" + (p === "YTD" ? " active" : "");
+      btn.textContent = p === "MTD" ? "MTD" : p === "YTD" ? "YTD" : monthShort(p);
+      btn.addEventListener("click", () => {
+        filterBarEl.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        render(p);
+      });
+      filterBarEl.appendChild(btn);
+    });
+    render("YTD");
+  }
+  renderGenericProfitTable("noonProfitTableBody", "noonProfitFilterBar", noonData.sku_rows, noonData.months, r => r.partner_sku);
+  renderGenericProfitTable("overallProfitTableBody", "overallProfitFilterBar", overallData.sku_rows, overallData.months, r => r.sku);
+
+  // ---------- Generic Cost-per-unit & recommended ASP table (Noon / Overall) ----------
+  // Same table Amazon's own "Cost per unit & recommended ASP" section uses, reading
+  // noonData.cost_table/overallData.cost_table (built server-side by
+  // merge_dashboard_data.py's build_cost_table() - reuses Amazon's own landed-cost
+  // figures verbatim, only actual_asp/margin_at_actual_pct are channel-specific).
+  function renderGenericCostTable(tbodyId, rows) {
+    const tbody = document.getElementById(tbodyId);
+    const dash = '<td class="cell-dash">&mdash;</td>';
+    const htmlRows = rows.map(r => {
+      const hasAsp = r.actual_asp !== null && r.actual_asp !== undefined && r.actual_asp > 0;
+      const meetsTarget = hasAsp && r.recommended_asp_60pct_margin != null && r.actual_asp >= r.recommended_asp_60pct_margin;
+      const aspCls = hasAsp && r.recommended_asp_60pct_margin != null ? (meetsTarget ? "pos" : "neg") : "";
+      const marginCls = r.margin_at_actual_pct != null && r.margin_at_actual_pct < 0 ? "neg" : "";
+      return `<tr><td>${r.name}</td>` +
+        (r.product_cost_usd == null ? dash : `<td>$${r.product_cost_usd.toFixed(1)}</td>`) +
+        (r.freight_usd == null ? dash : `<td>$${r.freight_usd.toFixed(1)}</td>`) +
+        (r.duty_usd == null ? dash : `<td>$${r.duty_usd.toFixed(1)}</td>`) +
+        (r.vat_usd == null ? dash : `<td>$${r.vat_usd.toFixed(1)}</td>`) +
+        `<td>${r.landed_cost_usd == null ? "&mdash;" : "$" + r.landed_cost_usd.toFixed(1)}</td>` +
+        `<td class="ytd">${r.landed_cost == null ? "&mdash;" : r.landed_cost.toFixed(1)}</td>` +
+        `<td class="pct">${r.recommended_asp_60pct_margin == null ? "&mdash;" : r.recommended_asp_60pct_margin.toFixed(1)}</td>` +
+        `<td class="pct ${aspCls}">${hasAsp ? r.actual_asp.toFixed(1) : "&mdash;"}</td>` +
+        `<td class="pct ${marginCls}">${r.margin_at_actual_pct == null ? "&mdash;" : r.margin_at_actual_pct.toFixed(1) + "%"}</td></tr>`;
+    });
+    tbody.innerHTML = htmlRows.join("\n");
+  }
+  renderGenericCostTable("noonCostTableBody", noonData.cost_table);
+  renderGenericCostTable("overallCostTableBody", overallData.cost_table);
+
+  function statusAndDoc(r) {
+    const doc = r.days_of_cover === null || r.days_of_cover === undefined ? "&mdash;" : r.days_of_cover.toLocaleString(undefined,{maximumFractionDigits:0});
+    const statusCell = r.needs_reorder ? `<td class="reorder-flag">Reorder now</td>` : `<td class="ok-flag">OK</td>`;
+    return { doc, statusCell };
+  }
+
+  function renderNoonInventory() {
+    const tbody = document.getElementById("noonInvBody");
+    const rows = noonData.inventory.map(r => {
+      const { doc, statusCell } = statusAndDoc(r);
+      const whCell = r.wh_inv === null || r.wh_inv === undefined ? '<td class="cell-dash">&mdash;</td>' : `<td>${r.wh_inv.toLocaleString()}</td>`;
+      return `<tr${r.needs_reorder ? ' class="reorder"' : ""}><td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+        `<td>${r.noon_inv.toLocaleString()}</td>` + whCell + `<td class="ytd">${r.total_inv.toLocaleString()}</td>` +
+        `<td>${r.units_sold_ytd}</td><td>${r.avg_daily_sales.toFixed(3)}</td><td>${r.reorder_point_90d.toFixed(1)}</td>` +
+        `<td>${doc}</td><td>${r.suggested_reorder_qty}</td>` + statusCell + `</tr>`;
+    });
+    tbody.innerHTML = rows.join("\n");
+  }
+  renderNoonInventory();
+
+  function renderOverallMonthly() {
+    const byMonth = key => m => { const row = overallData.monthly.find(r => r.month === m); return row ? row[key] : null; };
+    const rows = [];
+    rows.push(moneyRow("Gross revenue (Amazon + Noon)", overallData.months, byMonth("gross_revenue"), overallData.ytd.gross_revenue, "total"));
+    rows.push(subRow("&nbsp;&nbsp;of which Amazon", overallData.months, byMonth("gross_revenue_amazon")));
+    rows.push(subRow("&nbsp;&nbsp;of which Noon", overallData.months, byMonth("gross_revenue_noon")));
+    rows.push(moneyRow("COGS", overallData.months, m => -Math.abs(byMonth("cogs")(m) || 0), -Math.abs(overallData.ytd.cogs), ""));
+    rows.push(moneyRow("Gross margin", overallData.months, byMonth("gross_margin"), overallData.ytd.gross_margin, "total"));
+    rows.push(subRow("Other costs (Amazon: fees/storage/adj.)", overallData.months, byMonth("other_costs_amazon")));
+    rows.push(subRow("Other costs (Noon: referral/fulfillment/etc.)", overallData.months, byMonth("other_costs_noon")));
+    rows.push(moneyRow("Advertising spend", overallData.months, byMonth("ad_spend"), overallData.ytd.ad_spend, ""));
+    rows.push(moneyRow("Net profit (Amazon + Noon)", overallData.months, byMonth("net_profit"), overallData.ytd.net_profit, "total final"));
+    rows.push(subRow("&nbsp;&nbsp;of which Amazon", overallData.months, byMonth("net_profit_amazon")));
+    rows.push(subRow("&nbsp;&nbsp;of which Noon", overallData.months, byMonth("net_profit_noon")));
+    document.getElementById("overallMonthlyBody").innerHTML = rows.join("\n");
+  }
+  renderOverallMonthly();
+
+  function renderOverallInventory() {
+    const tbody = document.getElementById("overallInvBody");
+    const rows = overallData.inventory.map(r => {
+      const { doc, statusCell } = statusAndDoc(r);
+      const whCell = r.wh_inv === null || r.wh_inv === undefined ? '<td class="cell-dash">&mdash;</td>' : `<td>${r.wh_inv.toLocaleString()}</td>`;
+      return `<tr${r.needs_reorder ? ' class="reorder"' : ""}><td>${r.name}<br><span class="sku-code">${r.sku}</span></td>` +
+        `<td>${r.az_inv.toLocaleString()}</td><td>${r.noon_inv.toLocaleString()}</td>` + whCell + `<td class="ytd">${r.total_inv.toLocaleString()}</td>` +
+        `<td>${r.units_sold_ytd}</td><td>${r.avg_daily_sales.toFixed(3)}</td><td>${r.reorder_point_90d.toFixed(1)}</td>` +
+        `<td>${doc}</td><td>${r.suggested_reorder_qty}</td>` + statusCell + `</tr>`;
+    });
+    tbody.innerHTML = rows.join("\n");
+  }
+  renderOverallInventory();
+  /* CHANNEL_JS_END */
 
 </script>
