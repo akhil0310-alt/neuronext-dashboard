@@ -373,6 +373,8 @@
   
   
   
+  
+  
   /* CHANNEL_CSS_START */
   /* ---------- CHANNEL SWITCHER (Amazon / Noon / Overall) ---------- */
   .channel-nav { display: flex; gap: 6px; margin-bottom: 4px; }
@@ -406,7 +408,7 @@
     <div class="brand-block">
       <span class="eyebrow">NeuroNext FZ-LLC</span>
       <h1>Performance Dashboard</h1>
-      <span class="sub">1 Jan &ndash; 3 Oct 2026 &middot; Pulled directly from Amazon Selling Partner API</span>
+      <span class="sub">1 Jan &ndash; 3 Oct 2026 &middot; Pulled directly from Amazon Selling Partner API and Noon Partner API</span>
     </div>
     <div class="conn-block">
       <label class="year-picker" for="yearSelect">Year
@@ -414,7 +416,7 @@
       </label>
       <div class="conn">
         <span class="dot"></span>
-        <span>Connected to <b>Amazon</b> (SP-API) · snapshot taken <b>3 Oct 2026, 10:05 GST</b></span>
+        <span>Connected to <b>Amazon</b> (SP-API) &amp; <b>Noon</b> (Partner API) · snapshot taken <b>3 Oct 2026, 10:05 GST</b></span>
       </div>
     </div>
   </header>
@@ -432,14 +434,18 @@
 
   
 
+  
+
+  
+
   <!-- CHANNEL_NAV_START -->
   <nav class="channel-nav">
-    <button class="channel-nav-btn active" id="channelBtnAmazon" type="button">Amazon</button>
+    <button class="channel-nav-btn active" id="channelBtnOverall" type="button">Overall</button>
+    <button class="channel-nav-btn" id="channelBtnAmazon" type="button">Amazon</button>
     <button class="channel-nav-btn" id="channelBtnNoon" type="button">Noon</button>
-    <button class="channel-nav-btn" id="channelBtnOverall" type="button">Overall</button>
   </nav>
   <!-- CHANNEL_NAV_END -->
-  <div id="channelAmazon" class="channel-panel active">
+  <div id="channelAmazon" class="channel-panel">
   <nav class="tab-nav">
     <button class="tab-nav-btn active" id="tabBtnPnl" type="button">PNL</button>
     <button class="tab-nav-btn" id="tabBtnInventory" type="button">Inventory</button>
@@ -856,6 +862,8 @@
   
   
   
+  
+  
   <!-- CHANNEL_NOON_OVERALL_START -->
   <div class="channel-panel" id="channelNoon">
     <nav class="tab-nav">
@@ -961,7 +969,7 @@
     </div>
   </div>
 
-  <div class="channel-panel" id="channelOverall">
+  <div class="channel-panel active" id="channelOverall">
     <nav class="tab-nav">
       <button class="tab-nav-btn active" id="overallTabBtnPnl" type="button">PNL</button>
       <button class="tab-nav-btn" id="overallTabBtnInventory" type="button">Inventory</button>
@@ -1906,6 +1914,15 @@ const steps = [
       if (trueMax > 0 && wrapper.scrollLeft > trueMax) wrapper.scrollLeft = trueMax;
     }, { passive: true });
   });
+
+
+  
+
+
+  
+
+
+  
 
 
   
