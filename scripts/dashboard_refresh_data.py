@@ -188,9 +188,16 @@ def wac_as_of(batches, date_str):
     date_str. Falls back to the earliest batch if date_str precedes all of them
     (shouldn't happen given the 2026-01-01 opening batch, but guards divide-by-zero)."""
     applicable = [b for b in batches if b["date"] <= date_str] or batches[:1]
+    if not applicable:
+        return None
     qty = sum(b["qty"] for b in applicable)
     if not qty:
-        return None
+        # Zero qty-weight (real bug, found 2026-10-02): the opening batch's qty is backed
+        # out of TODAY's stock, so once current stock <= a later batch's qty the opening
+        # batch reads 0 units - and every sale dated before that later batch was costed
+        # at None -> 0 COGS (RH1008BSZ's 2025 sale hit this). With no qty to weight by,
+        # the latest applicable batch's own unit cost is the cost in effect that day.
+        return applicable[-1]["landed_cost_aed"]
     return sum(b["qty"] * b["landed_cost_aed"] for b in applicable) / qty
 
 # Warehouse inventory from the "Neuronext SOH & Outbound" Google Sheet, 'Current Summary'
@@ -433,9 +440,11 @@ def month_chunks(start, end):
     return chunks
 
 
-def fetch_orders(token, start, now):
+def fetch_orders(token, start, end=None):
     orders = []
     params = {"MarketplaceIds": MARKETPLACE_ID, "CreatedAfter": start.strftime("%Y-%m-%dT%H:%M:%SZ")}
+    if end is not None:  # past-year pulls only - the API rejects a CreatedBefore within 2 min of now
+        params["CreatedBefore"] = end.strftime("%Y-%m-%dT%H:%M:%SZ")
     while True:
         result = spapi_get(token, "/orders/v0/orders", params)
         payload = result["payload"]
@@ -486,11 +495,19 @@ def spapi_request(access_token, method, path, params=None, body=None):
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("x-amz-access-token", access_token)
     req.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(req) as resp:
-            return resp.status, json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode()
+    # Retry transient network/DNS errors (URLError, e.g. getaddrinfo failed) - added
+    # 2026-09-28 after a single DNS blip mid-poll crashed two consecutive scheduled runs.
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return resp.status, json.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode()
+        except urllib.error.URLError as e:
+            if attempt == 4:
+                raise
+            print(f"spapi_request network error ({e.reason}), retry {attempt + 1}/4")
+            time.sleep(5 * (attempt + 1))
 
 
 def _fetch_report_rows(token, report_type, start, now, label):
@@ -511,7 +528,11 @@ def _fetch_report_rows(token, report_type, start, now, label):
     report_doc_id = None
     for attempt in range(30):
         time.sleep(10)
-        s, r = spapi_request(token, "GET", f"/reports/2021-06-30/reports/{report_id}")
+        try:
+            s, r = spapi_request(token, "GET", f"/reports/2021-06-30/reports/{report_id}")
+        except urllib.error.URLError as e:
+            print(f"{label} report poll {attempt}: network error ({e.reason}), continuing")
+            continue
         proc_status = r.get("processingStatus") if isinstance(r, dict) else None
         print(f"{label} report poll {attempt}: {proc_status}")
         if proc_status == "DONE":
@@ -604,6 +625,11 @@ def fetch_inventory(token):
     return all_summaries
 
 
+# Amazon moving the seller's own money into / out of its reserve - a balance transfer,
+# not income or cost (in 2025: AED 43,683.10 each way, netting to zero). Kept out of P&L.
+RESERVE_ADJUSTMENT_TYPES = {"ReserveCredit", "ReserveDebit"}
+
+
 def aggregate(finance_pages):
     # SKU Analysis tab (added 2026-09-05): day-level units/revenue, separate from the
     # month-level dicts below which everything else on the dashboard uses. Day-level
@@ -616,6 +642,7 @@ def aggregate(finance_pages):
     month_totals = defaultdict(lambda: {"revenue": 0.0, "refunds": 0.0, "ad_spend": 0.0})
     month_refund_fee_credits = defaultdict(float)
     month_adjustments = defaultdict(float)
+    month_company_adjustments = defaultdict(float)  # adjustments with no SellerSKU
     refund_sku_month = defaultdict(lambda: defaultdict(float))
     refund_fees_sku_month = defaultdict(lambda: defaultdict(float))
     service_fee_total = 0.0
@@ -656,20 +683,46 @@ def aggregate(finance_pages):
                     fee_month[posted][fee.get("FeeType")] += val
                     sku_totals[sku]["fees"] += val
                     sku_month[sku][posted]["fees"] += val
+                # Promotions (added 2026-10-03, after tying the dashboard to Amazon's
+                # settlement statements - these were silently ignored before). A promotion
+                # with NO PromotionId is Amazon's free-shipping offer: verified 524/524 such
+                # lines exactly cancel a ShippingCharge credit on the same item, so it's netted
+                # into the same shipping bucket (net zero to the seller), not shown as a cost.
+                # A promotion WITH an id is seller-funded (Amazon-funded discounts never hit
+                # the seller's settlement) and gets its own "Promotion" line.
+                for promo in item.get("PromotionList", []) or []:
+                    val = (promo.get("PromotionAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                    fee_month[posted]["Promotion" if promo.get("PromotionId") else "Charge:ShippingCharge"] += val
+                    sku_totals[sku]["fees"] += val
+                    sku_month[sku][posted]["fees"] += val
 
         for ref in page.get("RefundEventList", []) or []:
             posted = (ref.get("PostedDate") or "")[:7]
             for item in ref.get("ShipmentItemAdjustmentList", []) or []:
                 sku = item.get("SellerSKU") or "UNKNOWN"
                 for chg in item.get("ItemChargeAdjustmentList", []) or []:
-                    if chg.get("ChargeType") == "Principal":
-                        val = chg.get("ChargeAmount", {}).get("CurrencyAmount", 0) or 0
+                    ctype = chg.get("ChargeType") or ""
+                    val = (chg.get("ChargeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                    if ctype == "Principal":
                         month_totals[posted]["refunds"] += val
                         sku_totals[sku]["refunds"] += val
                         refund_sku_month[sku][posted] += val
+                    elif "Tax" not in ctype:
+                        # Refunded shipping/other charges (added 2026-10-03 - previously
+                        # dropped, though the settlement deducts them) - same buckets as
+                        # the matching sale-side charge, so shipping nets per month.
+                        fee_month[posted][f"Charge:{ctype}"] += val
+                        sku_totals[sku]["refund_fees"] += val
+                        refund_fees_sku_month[sku][posted] += val
                 for fee in item.get("ItemFeeAdjustmentList", []) or []:
                     val = (fee.get("FeeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
                     month_refund_fee_credits[posted] += val
+                    sku_totals[sku]["refund_fees"] += val
+                    refund_fees_sku_month[sku][posted] += val
+                for promo in item.get("PromotionAdjustmentList", []) or []:
+                    # Promotion reversed on a refunded order - same id rule as sales above.
+                    val = (promo.get("PromotionAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                    fee_month[posted]["Promotion" if promo.get("PromotionId") else "Charge:ShippingCharge"] += val
                     sku_totals[sku]["refund_fees"] += val
                     refund_fees_sku_month[sku][posted] += val
 
@@ -679,6 +732,10 @@ def aggregate(finance_pages):
 
         for adj in page.get("AdjustmentEventList", []) or []:
             posted = (adj.get("PostedDate") or "")[:7]
+            adj_type = adj.get("AdjustmentType") or ""
+            if adj_type in RESERVE_ADJUSTMENT_TYPES:
+                continue
+            itemised = 0.0
             for item in adj.get("AdjustmentItemList", []) or []:
                 val = (item.get("TotalAmount", {}) or {}).get("CurrencyAmount", 0) or 0
                 month_adjustments[posted] += val
@@ -689,6 +746,18 @@ def aggregate(finance_pages):
                 if sku:
                     sku_totals[sku]["adjustments"] += val
                     sku_month[sku][posted]["adjustments"] += val
+                    itemised += val
+                else:
+                    month_company_adjustments[posted] += val
+                    itemised += val
+            # Most adjustment events have NO AdjustmentItemList at all - only the event-
+            # level AdjustmentAmount (e.g. 2025's AED 6,289 of SellerRewards, found
+            # 2026-10-03 when tying to settlement statements - previously dropped). Any
+            # amount not itemised to a SKU is company-level, allocated to SKUs pro-rata.
+            rest = ((adj.get("AdjustmentAmount", {}) or {}).get("CurrencyAmount", 0) or 0) - itemised
+            if abs(rest) > 0.005:
+                month_adjustments[posted] += rest
+                month_company_adjustments[posted] += rest
 
         for ad in page.get("ProductAdsPaymentEventList", []) or []:
             posted = (ad.get("postedDate") or ad.get("PostedDate") or "")[:7]
@@ -701,6 +770,7 @@ def aggregate(finance_pages):
         "sku_month": sku_month, "sku_totals": sku_totals, "fee_month": fee_month,
         "month_totals": month_totals, "month_refund_fee_credits": month_refund_fee_credits,
         "month_adjustments": month_adjustments, "refund_sku_month": refund_sku_month,
+        "month_company_adjustments": month_company_adjustments,
         "refund_fees_sku_month": refund_fees_sku_month,
         "service_fee_total": service_fee_total,
         "orders_with_events": len(all_orders_with_events),
@@ -762,7 +832,12 @@ def parse_returns(returns_rows):
     return by_sku, by_sku_month, by_sku_disposition
 
 
-def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reimbursement_rows=None, removal_order_rows=None):
+def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reimbursement_rows=None, removal_order_rows=None, as_of=None):
+    # as_of (added 2026-10-02, for the 2025 year page): the "today" every period-
+    # relative figure is measured against - days_elapsed, current WAC, ageing. Defaults
+    # to now; a closed past year passes its own 31-Dec end so e.g. the Cost-per-unit
+    # table shows the cost basis in effect that year, not a later batch's WAC.
+    as_of = as_of or datetime.datetime.utcnow()
     sellable_by_sku, sellable_by_sku_month, disposition_by_sku = parse_returns(returns_rows or [])
 
     total_gross = sum(v["revenue"] for v in agg["sku_totals"].values())
@@ -777,6 +852,7 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
     # response, so it alone is allocated pro-rata by revenue share (like ad spend),
     # never claimed as real.
     total_storage = agg["service_fee_total"]
+    total_company_adj = sum(v for m, v in agg["month_company_adjustments"].items() if m in months)
 
     # Running-WAC support (added 2026-09-06): total_inv_by_sku mirrors the az_inv+wh_inv
     # logic used for the Inventory tab further below, computed early here so the cost
@@ -789,8 +865,8 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
         r_az = r.get("totalQuantity", 0)
         r_wh = WH_INV_TRACKER.get(r_sku)
         total_inv_by_sku[r_sku] = r_az if r_wh is None else r_az + r_wh
-    today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    today_date = datetime.datetime.utcnow().date()
+    today_str = as_of.strftime("%Y-%m-%d")
+    today_date = as_of.date()
     sku_batches_map = {sku: sku_cost_batches(sku, total_inv_by_sku.get(sku, 0)) for sku in LANDED_COST}
     current_wac = {sku: wac_as_of(batches, today_str) for sku, batches in sku_batches_map.items()}
 
@@ -932,6 +1008,7 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
             m_rev_share = m_gross / m_total_gross if m_total_gross else 0
             m_ad_alloc = m_total_ad * m_rev_share
             m_storage_alloc = storage_per_month * m_rev_share
+            m_fees += agg["month_company_adjustments"].get(m, 0.0) * m_rev_share
             m_net_profit = m_margin + m_fees + m_ad_alloc + m_storage_alloc
             months_detail[m] = {
                 "revenue": round(m_gross, 2), "units": v["units"],
@@ -966,6 +1043,10 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
         rev_share = tot["revenue"] / total_gross if total_gross else 0
         ad_alloc = total_ad * rev_share
         storage_alloc = total_storage * rev_share
+        # Company-level adjustments (no SellerSKU, e.g. SellerRewards) allocated by gross-
+        # revenue share like storage/ads, so per-SKU rows still sum to the monthly totals.
+        company_adj_alloc = total_company_adj * rev_share
+        net_fees += company_adj_alloc
         net_profit = gross_margin + net_fees + ad_alloc + storage_alloc
         if tot["units"]:
             cost_per_unit = (gross_cogs / tot["units"]) if not is_est else (COGS_ESTIMATE_PCT_OF_NET_REVENUE * net_rev / tot["units"])
@@ -1064,7 +1145,8 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
     monthly_rows = []
     cost_breakdown_ytd = {
         "commission": 0.0, "fulfillment": 0.0, "chargebacks": 0.0,
-        "shipcharges": 0.0, "refund_credits": 0.0, "adjustments": 0.0, "storage": 0.0,
+        "shipcharges": 0.0, "refund_credits": 0.0, "adjustments": 0.0,
+        "promotions": 0.0, "other_fees": 0.0, "storage": 0.0,
     }
     for m in months:
         mt = agg["month_totals"].get(m, {"revenue": 0.0, "refunds": 0.0, "ad_spend": 0.0})
@@ -1101,13 +1183,24 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
         shipcharges = fm.get("Charge:ShippingCharge", 0.0) + fm.get("Charge:PaymentMethodFee", 0.0)
         refund_credits = agg["month_refund_fee_credits"].get(m, 0.0)
         adjustments = agg["month_adjustments"].get(m, 0.0)
-        other_costs = commission + fulfillment + chargebacks + shipcharges + refund_credits + adjustments + storage_per_month
+        promotions = fm.get("Promotion", 0.0)
+        # Any fee/charge type not named above (none seen as of 2026-10-03) - kept in
+        # other_costs so the total always ties to the settlement statements, and flagged.
+        named = {"Commission", "FBAPerUnitFulfillmentFee", "ShippingChargeback", "CODChargeback",
+                 "Charge:ShippingCharge", "Charge:PaymentMethodFee", "Promotion"}
+        other_fees = sum(v for k, v in fm.items() if k not in named)
+        if abs(other_fees) > 0.005:
+            print(f"WARNING: {m} has unmapped fee/charge types {[k for k in fm if k not in named]} = {other_fees:.2f} (kept in Other costs)")
+        other_costs = (commission + fulfillment + chargebacks + shipcharges + refund_credits + adjustments
+                       + promotions + other_fees + storage_per_month)
         cost_breakdown_ytd["commission"] += commission
         cost_breakdown_ytd["fulfillment"] += fulfillment
         cost_breakdown_ytd["chargebacks"] += chargebacks
         cost_breakdown_ytd["shipcharges"] += shipcharges
         cost_breakdown_ytd["refund_credits"] += refund_credits
         cost_breakdown_ytd["adjustments"] += adjustments
+        cost_breakdown_ytd["promotions"] += promotions
+        cost_breakdown_ytd["other_fees"] += other_fees
         cost_breakdown_ytd["storage"] += storage_per_month
         gross_margin_m = net_rev - cogs_m
         profit_before_ads = gross_margin_m + other_costs
@@ -1132,6 +1225,7 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
                 "commission": round(commission, 2), "fulfillment": round(fulfillment, 2),
                 "chargebacks": round(chargebacks, 2), "shipcharges": round(shipcharges, 2),
                 "refund_credits": round(refund_credits, 2), "adjustments": round(adjustments, 2),
+                "promotions": round(promotions, 2), "other_fees": round(other_fees, 2),
                 "storage": round(storage_per_month, 2),
             },
         })
@@ -1141,8 +1235,8 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
     other_costs_ytd = sum(r["other_costs"] for r in monthly_rows)
     ad_spend_ytd = sum(r["ad_spend"] for r in monthly_rows)
     units_ytd = sum(r["units"] for r in monthly_rows)
-    year_start = datetime.datetime(datetime.datetime.utcnow().year, 1, 1)
-    days_elapsed = max(1, (datetime.datetime.utcnow() - year_start).days + 1)
+    year_start = datetime.datetime(as_of.year, 1, 1)
+    days_elapsed = max(1, (as_of - year_start).days + 1)
 
     ytd = {
         "gross_revenue": round(gross_revenue_ytd, 2),
@@ -1329,6 +1423,9 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
 
     return {
         "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "year": as_of.year,
+        "as_of": as_of.isoformat() + "Z",
+        "is_full_year": as_of.year < datetime.datetime.utcnow().year,
         "months": months,
         "ytd": ytd,
         "monthly": monthly_rows,
@@ -1351,13 +1448,30 @@ def build_dashboard_data(agg, orders, inventory, months, returns_rows=None, reim
 
 
 def main():
+    # --year YYYY (added 2026-10-02): pulls a closed past year (Jan 1 - Dec 31) into
+    # dashboard_data_YYYY.json for the static per-year page (e.g. 2025.html). No flag =
+    # current year to date into OUT_PATH, exactly as before.
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--year", type=int)
+    args = ap.parse_args()
+
     token = get_amz_access_token()
-    now = datetime.datetime.utcnow()
-    start = datetime.datetime(now.year, 1, 1)
-    months = [f"{now.year}-{m:02d}" for m in range(1, now.month + 1)]
+    real_now = datetime.datetime.utcnow()
+    out_path = OUT_PATH
+    if args.year and args.year < real_now.year:
+        start = datetime.datetime(args.year, 1, 1)
+        now = datetime.datetime(args.year + 1, 1, 1)  # exclusive fetch end
+        as_of = datetime.datetime(args.year, 12, 31, 23, 59, 59)
+        out_path = os.path.join(os.path.dirname(OUT_PATH), f"dashboard_data_{args.year}.json")
+    else:
+        now = real_now
+        start = datetime.datetime(now.year, 1, 1)
+        as_of = now
+    months = [f"{as_of.year}-{m:02d}" for m in range(1, as_of.month + 1)]
 
     print("Fetching orders...")
-    orders = fetch_orders(token, start, now)
+    orders = fetch_orders(token, start, now if now < real_now else None)
     print("Fetching order items skipped (not required for dashboard numbers - Finances API covers revenue/units)")
 
     print("Fetching finance events...")
@@ -1379,11 +1493,11 @@ def main():
     print(f"  {len(removal_order_rows)} removal order records")
 
     agg = aggregate(finance_pages)
-    data = build_dashboard_data(agg, orders, inventory, months, returns_rows, reimbursement_rows, removal_order_rows)
+    data = build_dashboard_data(agg, orders, inventory, months, returns_rows, reimbursement_rows, removal_order_rows, as_of)
 
-    with open(OUT_PATH, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(data, f, indent=2)
-    print(f"Saved {OUT_PATH}")
+    print(f"Saved {out_path}")
     print(f"YTD gross revenue: {data['ytd']['gross_revenue']}, net profit: {data['ytd']['net_profit']}")
 
 

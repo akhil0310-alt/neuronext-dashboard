@@ -21,7 +21,9 @@ import sys
 # Local runs (SKILL.md's scheduled task) publish under dashboard/; the GitHub repo
 # serves the same file as index.html at its root instead - CI sets this env var.
 HTML_PATH = os.environ.get("DASHBOARD_HTML_PATH", "dashboard/neuronext_amazon_dashboard.html")
-SCRIPTS_DIR = "scripts"
+# NN_FRAG_DIR (added 2026-10-02): build_year_page.py splices a past year's fragments
+# from their own directory into that year's page copy.
+SCRIPTS_DIR = os.environ.get("NN_FRAG_DIR", "scripts")
 
 
 def read(name):

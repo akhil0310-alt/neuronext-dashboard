@@ -4,8 +4,13 @@ Profitability table, Other-costs breakdown, SKU x month matrix) from
 dashboard_data.json, all numbers formatted per the global rule - aggregate
 AED figures 0 decimals, % figures 1 decimal. Scratch script."""
 import json
+import os
 
-d = json.load(open('dashboard_data.json', encoding='utf-8'))
+# NN_DATA / NN_OUT_DIR (added 2026-10-02): build_year_page.py points these at a past
+# year's dashboard_data_YYYY.json and a separate fragment dir; unset = current year.
+d = json.load(open(os.environ.get('NN_DATA', 'dashboard_data.json'), encoding='utf-8'))
+OUT_DIR = os.environ.get('NN_OUT_DIR', '.')
+PERIOD = 'FY' if d.get('is_full_year') else 'YTD'
 ytd = d['ytd']
 monthly = d['monthly']
 months = d['months']
@@ -63,6 +68,9 @@ month_label = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
 # ================= KPI STRIP =================
 import datetime
 gen_dt = datetime.datetime.fromisoformat(d['generated_at'].replace('Z', '+00:00'))
+# period_end: last day the numbers cover - today for the live year, 31 Dec for a closed
+# past year (as_of, added 2026-10-02). gen_dt stays the snapshot time.
+period_end = datetime.datetime.fromisoformat(d.get('as_of', d['generated_at']).replace('Z', '+00:00'))
 mtd = monthly[-1]
 mtd_month_name = month_label[mtd['month'][5:7]]
 refund_rate = abs(ytd['refunds']) / ytd['gross_revenue'] * 100 if ytd['gross_revenue'] else 0
@@ -72,9 +80,9 @@ ad_pct = abs(ytd['ad_spend']) / ytd['gross_revenue'] * 100 if ytd['gross_revenue
 
 kpi_html = f"""  <section class="kpis">
     <div class="kpi">
-      <span class="label">MTD revenue</span>
+      <span class="label">{'MTD' if PERIOD == 'YTD' else mtd_month_name} revenue</span>
       <span class="value">AED {fmt0(mtd['gross_revenue'])}</span>
-      <span class="delta">{mtd_month_name} 1–{gen_dt.day} · {mtd['orders']} orders · {mtd['units']} units</span>
+      <span class="delta">{mtd_month_name} 1–{period_end.day} · {mtd['orders']} orders · {mtd['units']} units</span>
     </div>
     <div class="kpi accent-critical">
       <span class="label">Gross revenue</span>
@@ -99,20 +107,20 @@ kpi_html = f"""  <section class="kpis">
     <div class="kpi">
       <span class="label">Revenue per day</span>
       <span class="value">AED {fmt1(ytd['revenue_per_day'])}</span>
-      <span class="delta">{ytd['units_per_day']:.2f} units / day · {ytd['days_elapsed']}d YTD</span>
+      <span class="delta">{ytd['units_per_day']:.2f} units / day · {ytd['days_elapsed']}d {PERIOD}</span>
     </div>
   </section>"""
-open('gen_kpi_strip.html', 'w', encoding='utf-8').write(kpi_html + "\n")
+open(os.path.join(OUT_DIR, 'gen_kpi_strip.html'), 'w', encoding='utf-8').write(kpi_html + "\n")
 
 gen_dt_dubai = gen_dt + datetime.timedelta(hours=4)  # Asia/Dubai is a fixed UTC+4, no DST
 snapshot_month_name = month_label[f"{gen_dt_dubai.month:02d}"]
 snapshot_time_str = f"{gen_dt_dubai.day} {snapshot_month_name} {gen_dt_dubai.year}, {gen_dt_dubai:%H:%M} GST"
 header_html = (
-    f'<span class="sub">1 Jan &ndash; {gen_dt.day} {mtd_month_name} {gen_dt.year} &middot; '
+    f'<span class="sub">1 Jan &ndash; {period_end.day} {mtd_month_name} {period_end.year} &middot; '
     f'Pulled directly from Amazon Selling Partner API</span>\n'
     f'<!--SNAPSHOT_DATE-->{snapshot_time_str}'
 )
-open('gen_header.html', 'w', encoding='utf-8').write(header_html + "\n")
+open(os.path.join(OUT_DIR, 'gen_header.html'), 'w', encoding='utf-8').write(header_html + "\n")
 
 # Table header rows depend on how many months have accumulated YTD - regenerated every
 # run so a month rollover (e.g. Aug -> Sep) never again requires a manual HTML edit.
@@ -122,19 +130,19 @@ sku_header_html = (
     "          <tr>\n"
     "            <th>SKU</th>\n"
     f"            {month_ths}\n"
-    '            <th class="ytd">YTD Total</th>\n'
+    f'            <th class="ytd">{PERIOD} Total</th>\n'
     "          </tr>"
 )
-open('gen_sku_header.html', 'w', encoding='utf-8').write(sku_header_html + "\n")
+open(os.path.join(OUT_DIR, 'gen_sku_header.html'), 'w', encoding='utf-8').write(sku_header_html + "\n")
 
 monthwise_header_html = (
     "          <tr>\n"
     "            <th>Line item</th>\n"
-    '            <th class="ytd">YTD Total</th>\n'
+    f'            <th class="ytd">{PERIOD} Total</th>\n'
     f"            {month_ths}\n"
     "          </tr>"
 )
-open('gen_monthwise_header.html', 'w', encoding='utf-8').write(monthwise_header_html + "\n")
+open(os.path.join(OUT_DIR, 'gen_monthwise_header.html'), 'w', encoding='utf-8').write(monthwise_header_html + "\n")
 
 # ================= MONTHWISE PROFITABILITY (was Fee & cost breakdown) =================
 def row(label, key, months, ytd_val, is_total=False, cls_extra=""):
@@ -220,10 +228,20 @@ def cb_sub_row(label, component):
 rows.append(cb_sub_row("Referral commission", "commission"))
 rows.append(cb_sub_row("FBA fulfillment fees", "fulfillment"))
 rows.append(cb_sub_row("Shipping &amp; COD chargebacks", "chargebacks"))
-rows.append(cb_sub_row("Shipping / payment charges", "shipcharges"))
+rows.append(cb_sub_row("Shipping / payment charges (net of free-shipping promos)", "shipcharges"))
 rows.append(cb_sub_row("Refund fee credits", "refund_credits"))
 rows.append(cb_sub_row("FBA storage &amp; inbound (prorated evenly across months)", "storage"))
-rows.append(cb_sub_row("Reimbursements / adjustments", "adjustments"))
+rows.append(cb_sub_row("Reimbursements / adjustments (incl. Seller Rewards)", "adjustments"))
+# Seller-funded promotions + catch-all for unmapped fee types (added 2026-10-03, settlement
+# tie-out). .get() so an older dashboard_data.json without these keys still renders.
+cb.setdefault("promotions", 0.0)
+cb.setdefault("other_fees", 0.0)
+for mm in monthly:
+    mm['cost_breakdown'].setdefault("promotions", 0.0)
+    mm['cost_breakdown'].setdefault("other_fees", 0.0)
+rows.append(cb_sub_row("Promotions (your coupons/deals)", "promotions"))
+if abs(cb["other_fees"]) > 0.005:
+    rows.append(cb_sub_row("Other Amazon fees/charges", "other_fees"))
 
 # profit_before_ads is unchanged from its existing definition - it already equals
 # gross_margin_new + other_costs + refunds_non_sellable algebraically, so it's still
@@ -235,7 +253,7 @@ rows.append(row("Net profit", "net_profit", months, ytd['net_profit'], cls_extra
 rows.append(pct_row("Net profit % (of gross)", "net_profit"))
 
 mwp_html = "\n".join(rows)
-open('gen_monthwise_profitability.html', 'w', encoding='utf-8').write(mwp_html + "\n")
+open(os.path.join(OUT_DIR, 'gen_monthwise_profitability.html'), 'w', encoding='utf-8').write(mwp_html + "\n")
 
 # Other-costs breakdown is now inline in the Monthwise Profitability table above
 # (see cb_sub_row) - no longer a separate YTD-only collapsed section/fragment.
@@ -272,7 +290,7 @@ for r in sku_rows_sorted:
     cells.append(f'<td class="ytd"><span class="cell-rev">{fmt0(ytd_rev)}</span><span class="cell-units">{ytd_units}u</span></td>')
     matrix_rows.append(f"          <tr>{''.join(cells)}</tr>")
 
-open('gen_sku_matrix.html', 'w', encoding='utf-8').write("\n".join(matrix_rows) + "\n")
+open(os.path.join(OUT_DIR, 'gen_sku_matrix.html'), 'w', encoding='utf-8').write("\n".join(matrix_rows) + "\n")
 
 print("HTML fragments generated:")
 for fn in ["gen_kpi_strip.html", "gen_monthwise_profitability.html",

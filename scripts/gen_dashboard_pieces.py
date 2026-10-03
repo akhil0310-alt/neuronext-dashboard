@@ -3,8 +3,13 @@
 gen_*.txt files for splicing into neuronext_amazon_dashboard.html. Scratch
 script, not part of the regular pipeline."""
 import json
+import os
 
-d = json.load(open('dashboard_data.json', encoding='utf-8'))
+# NN_DATA / NN_OUT_DIR (added 2026-10-02): build_year_page.py points these at a past
+# year's dashboard_data_YYYY.json and a separate fragment dir; unset = current year.
+d = json.load(open(os.environ.get('NN_DATA', 'dashboard_data.json'), encoding='utf-8'))
+OUT_DIR = os.environ.get('NN_OUT_DIR', '.')
+PERIOD = 'FY' if d.get('is_full_year') else 'YTD'
 
 
 def jn(v, nd=None):
@@ -39,7 +44,7 @@ ytd = d['ytd']
 orders_total = sum(m['orders'] for m in monthly)  # unique orders WITH financial events, matches monthly rows
 units_ytd = sum(m['units'] for m in monthly)
 ytdbar_js = (
-    f"const ytdBar = {{ m: \"YTD\", revenue: {jn(ytd['gross_revenue'],2)}, "
+    f"const ytdBar = {{ m: \"{PERIOD}\", revenue: {jn(ytd['gross_revenue'],2)}, "
     f"profitBefore: {jn(ytd['profit_before_ads'],2)}, profit: {jn(ytd['net_profit'],2)}, "
     f"orders: {orders_total}, units: {units_ytd} }};"
 )
@@ -50,7 +55,7 @@ monthlabels_js = "const monthLabels = {" + ",".join(
     f"{js_str(m)}:{js_str(month_label[m.split('-')[1]] + ' ' + m.split('-')[0])}" for m in monthkeys
 ) + "};"
 
-with open('gen_monthly.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_monthly.txt'), 'w', encoding='utf-8') as f:
     f.write(monthly_js + "\n" + ytdbar_js + "\n\n" + monthkeys_js + "\n" + monthlabels_js + "\n")
 
 # ---------- skuData ----------
@@ -125,7 +130,7 @@ for r in d['sku_rows']:
     sku_lines.append(f"    {{ sku:{js_str(r['sku'])}, name:{js_str(name)}, ytd:{ytd_obj}, months:{months_obj} }},")
 
 skudata_js = "const skuData = [\n" + "\n".join(sku_lines) + "\n  ];"
-with open('gen_skudata.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_skudata.txt'), 'w', encoding='utf-8') as f:
     f.write(skudata_js + "\n")
 
 # ---------- dailySalesData (SKU Analysis tab) ----------
@@ -144,7 +149,7 @@ for sku in CANONICAL_ORDER:
         f"    {{ sku:{js_str(sku)}, name:{js_str(name)}, days:[" + ",".join(row_strs) + "] },"
     )
 dailysales_js = "const dailySalesData = [\n" + "\n".join(daily_sku_lines) + "\n  ];"
-with open('gen_dailysales.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_dailysales.txt'), 'w', encoding='utf-8') as f:
     f.write(dailysales_js + "\n")
 
 # ---------- costTable ----------
@@ -161,7 +166,7 @@ for r in ct_sorted:
         f"wac_revised:{'true' if r.get('wac_revised') else 'false'} }},"
     )
 costtable_js = "const costTable = [\n" + "\n".join(cost_lines) + "\n  ];"
-with open('gen_costtable.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_costtable.txt'), 'w', encoding='utf-8') as f:
     f.write(costtable_js + "\n")
 
 # ---------- costLedgerData (Inventory Movement & Costing tab) ----------
@@ -184,7 +189,7 @@ for r in ledger_sorted:
         f"days_since_last_batch:{r['days_since_last_batch']}, batches:[" + ",".join(batch_strs) + "] },"
     )
 costledger_js = "const costLedgerData = [\n" + "\n".join(ledger_lines) + "\n  ];"
-with open('gen_costledger.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_costledger.txt'), 'w', encoding='utf-8') as f:
     f.write(costledger_js + "\n")
 
 # ---------- waterfall steps ----------
@@ -198,7 +203,7 @@ steps_js = (
     f"    {{ label: \"Net proceeds\", value: {jn(ytd['net_proceeds'],2)}, type: \"total final\" }},\n"
     "  ];"
 )
-with open('gen_waterfall.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_waterfall.txt'), 'w', encoding='utf-8') as f:
     f.write(f"const wfMax = {jn(wf_max,2)};\n" + steps_js + "\n")
 
 # ---------- inventory ----------
@@ -215,7 +220,7 @@ for r in sorted(inv_filtered, key=lambda x: canonical_key(x['sku'])):
         f"suggested_reorder_qty:{r['suggested_reorder_qty']}, needs_reorder:{'true' if r['needs_reorder'] else 'false'} }},"
     )
 inv_js = "const invData = [\n" + "\n".join(inv_lines) + "\n  ];"
-with open('gen_inventory.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_inventory.txt'), 'w', encoding='utf-8') as f:
     f.write(inv_js + "\n")
 
 # ---------- KPI numbers ----------
@@ -246,7 +251,7 @@ for r in sorted(d.get('returns_breakdown', []), key=lambda x: canonical_key(x['s
         f"cogs_reversed:{jn(r['cogs_reversed'])} }},"
     )
 returns_js = "const returnsData = [\n" + "\n".join(returns_lines) + "\n  ];"
-with open('gen_returns.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_returns.txt'), 'w', encoding='utf-8') as f:
     f.write(returns_js + "\n")
 
 kpi['cogs_reversed_ytd'] = d.get('cogs_reversed_ytd', 0)
@@ -261,7 +266,7 @@ for r in d.get('reimbursements', []):
         f"quantity:{r['quantity']}, amount_aed:{jn(r['amount_aed'])} }},"
     )
 reimb_js = "const reimbursementsData = [\n" + "\n".join(reimb_lines) + "\n  ];"
-with open('gen_reimbursements.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_reimbursements.txt'), 'w', encoding='utf-8') as f:
     f.write(reimb_js + "\n")
 
 # ---------- removal orders (FBA Removal Order Detail report, added 2026-09-06) ----------
@@ -276,7 +281,7 @@ for r in d.get('removal_orders', []):
         f"in_process_qty:{r['in_process_qty']}, cancelled_qty:{r['cancelled_qty']} }},"
     )
 removal_js = "const removalOrdersData = [\n" + "\n".join(removal_lines) + "\n  ];"
-with open('gen_removalorders.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_removalorders.txt'), 'w', encoding='utf-8') as f:
     f.write(removal_js + "\n")
 
 # ---------- inventory ageing matrix (warehouse SOH FIFO reconstruction, added 2026-09-21) ----------
@@ -305,10 +310,10 @@ ageing_js = (
     f"const inventoryAgeingTotals = {{ totalUnits:{ageing_totals.get('total_units', 0)}, "
     f"totalValue:{jn(ageing_totals.get('total_value', 0),2)}, buckets:[{totals_buckets_js}] }};"
 )
-with open('gen_inventoryageing.txt', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_inventoryageing.txt'), 'w', encoding='utf-8') as f:
     f.write(ageing_js + "\n")
 
-with open('gen_kpi.json', 'w', encoding='utf-8') as f:
+with open(os.path.join(OUT_DIR, 'gen_kpi.json'), 'w', encoding='utf-8') as f:
     json.dump(kpi, f, indent=2)
 
 print("All fragments generated.")
