@@ -117,7 +117,7 @@ snapshot_month_name = month_label[f"{gen_dt_dubai.month:02d}"]
 snapshot_time_str = f"{gen_dt_dubai.day} {snapshot_month_name} {gen_dt_dubai.year}, {gen_dt_dubai:%H:%M} GST"
 header_html = (
     f'<span class="sub">1 Jan &ndash; {period_end.day} {mtd_month_name} {period_end.year} &middot; '
-    f'Pulled directly from Amazon Selling Partner API</span>\n'
+    f'Pulled directly from Amazon Selling Partner API and Noon Partner API</span>\n'
     f'<!--SNAPSHOT_DATE-->{snapshot_time_str}'
 )
 open(os.path.join(OUT_DIR, 'gen_header.html'), 'w', encoding='utf-8').write(header_html + "\n")

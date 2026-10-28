@@ -24,7 +24,15 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: "pip install --only-binary=:all: gspread google-auth"
+        # requests + PyJWT + cryptography are for the Noon API (RS256-signed JWT login);
+        # gspread + google-auth are for the warehouse-stock Google Sheet.
+        run: "pip install --only-binary=:all: gspread google-auth requests PyJWT cryptography"
+
+      # The running-WAC cost ledger (UK batch etc.) is a REQUIRED input. dashboard_refresh_data.py
+      # silently falls back to flat opening costs if the file is missing - that is exactly how
+      # the live page showed stale costs for weeks (found 2026-10-28). Fail loudly instead.
+      - name: Verify cost ledger is present
+        run: test -s scripts/inventory_cost_ledger.json
 
       - name: Write credential files from secrets
         run: |
@@ -34,6 +42,19 @@ jobs:
           AMAZON_APP_JSON: ${{ secrets.AMAZON_APP_JSON }}
           GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON }}
 
+      - name: Check Noon credentials are configured
+        id: noon
+        run: |
+          if [ -n "$NOON_APP_JSON" ]; then
+            printf '%s' "$NOON_APP_JSON" > "$RUNNER_TEMP/noon_app.json"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Noon refresh skipped::NOON_APP_JSON secret is not set - the Noon and Overall sections of the live page will NOT refresh until it is added."
+          fi
+        env:
+          NOON_APP_JSON: ${{ secrets.NOON_APP_JSON }}
+
       - name: Pull fresh Amazon + warehouse data
         working-directory: scripts
         run: python dashboard_refresh_data.py
@@ -41,6 +62,7 @@ jobs:
           AMZ_CRED_PATH: ${{ runner.temp }}/amazon_app.json
           GSHEET_CRED_PATH: ${{ runner.temp }}/google_sheets_service_account.json
           DASHBOARD_DATA_OUT: dashboard_data.json
+          COST_LEDGER_PATH: inventory_cost_ledger.json
 
       - name: Regenerate HTML fragments
         working-directory: scripts
@@ -49,16 +71,46 @@ jobs:
           python gen_dashboard_html.py
 
       - name: Splice fragments into index.html and validate
+        id: splice
         run: python scripts/splice_and_validate.py
         env:
           DASHBOARD_HTML_PATH: index.html
 
+      # Noon + Overall sections. These run AFTER the Amazon splice and a failure here fails the
+      # job (red run + GitHub failure email) rather than letting stale Noon/Overall numbers sit
+      # next to fresh Amazon ones - but the commit step below still pushes the Amazon refresh.
+      - name: Pull fresh Noon data
+        if: steps.noon.outputs.enabled == 'true'
+        working-directory: scripts
+        run: python noon_refresh_data.py
+        env:
+          NOON_CRED_PATH: ${{ runner.temp }}/noon_app.json
+          NOON_DATA_OUT: noon_data.json
+          DASHBOARD_DATA_OUT: dashboard_data.json
+
+      - name: Merge Amazon + Noon into the Overall view
+        if: steps.noon.outputs.enabled == 'true'
+        working-directory: scripts
+        run: python merge_dashboard_data.py
+        env:
+          DASHBOARD_DATA_OUT: dashboard_data.json
+          NOON_DATA_OUT: noon_data.json
+          COMBINED_DATA_OUT: dashboard_data_combined.json
+
+      - name: Inject Noon + Overall data into index.html
+        if: steps.noon.outputs.enabled == 'true'
+        run: python scripts/inject_unified_dashboard.py --data-only
+        env:
+          DASHBOARD_HTML_PATH: index.html
+          COMBINED_DATA_OUT: scripts/dashboard_data_combined.json
+
       - name: Remove credential files
         if: always()
         run: |
-          rm -f "$RUNNER_TEMP/amazon_app.json" "$RUNNER_TEMP/google_sheets_service_account.json"
+          rm -f "$RUNNER_TEMP/amazon_app.json" "$RUNNER_TEMP/google_sheets_service_account.json" "$RUNNER_TEMP/noon_app.json"
 
       - name: Commit and push if changed
+        if: always() && steps.splice.outcome == 'success'
         run: |
           git config user.name "neuronext-dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
