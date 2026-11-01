@@ -105,6 +105,11 @@ main{padding:20px 0 56px}
 .tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;min-width:150px}
 .tip b{display:block;margin-bottom:4px}
 .tip div{display:flex;justify-content:space-between;gap:16px}
+.tip{max-width:340px}
+.tip .tg{margin-top:8px;font-weight:600}
+.tip .ts{color:var(--ink2);padding-left:14px}
+.tile.hv{cursor:help}
+.tile.hv:hover,.tile.hv:focus{border-color:var(--axis);outline:none}
 .tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
 details.tv{margin-top:10px;font-size:13px;color:var(--ink2)}
 details.tv summary{cursor:pointer}
@@ -295,12 +300,32 @@ function kpiStrip(c){
     {l: "Net proceeds", v: money(k.net_proceeds), sh: `<span class="chip">${pct(k.net_proceeds_pct)}</span> of gross revenue`, t: "Gross revenue after refunds, fees and ad spend, before cost of goods"},
     {l: "Net profit", v: money(k.net_profit), sh: `<span class="chip">${pct(k.net_profit_pct)}</span> of gross revenue`, c: k.net_profit < 0 ? "neg" : "pos", t: "Net proceeds minus cost of goods"},
     {l: "Ad spend", v: money(Math.abs(k.ad)), sh: `<span class="chip">${pct(k.ad_pct)}</span> of gross revenue`},
-    {l: "Revenue per day", v: money(k.rev_per_day, 1), s: `${num(k.units_per_day, 2)} units / day · ${k.days}d YTD`},
+    {l: "Sales yesterday", v: money(k.yday.gross), s: `${k.yday.label} · ${k.yday.units} unit${k.yday.units === 1 ? "" : "s"}`, hv: 1, t: "Hover for the platform and product breakup"},
   ];
-  return `<section class="kpis">${tiles.map(t => `<div class="tile" ${t.t ? `title="${esc(t.t)}"` : ""}><div class="l">${esc(t.l)}</div><div class="v ${t.c || ""}">${t.v}</div><div class="s">${t.sh || esc(t.s)}</div></div>`).join("")}</section>`;
+  return `<section class="kpis">${tiles.map(t => `<div class="tile ${t.hv ? "hv" : ""}" ${t.hv ? 'data-yd="1" tabindex="0"' : t.t ? `title="${esc(t.t)}"` : ""}><div class="l">${esc(t.l)}</div><div class="v ${t.c || ""}">${t.v}</div><div class="s">${t.sh || esc(t.s)}</div></div>`).join("")}</section>`;
 }
 
 /* ---------- revenue waterfall ---------- */
+function ydayTip(c){
+  const y = c.kpis.yday;
+  const money = v => (v < 0 ? MINUS : "") + "AED " + Math.abs(Math.round(v)).toLocaleString("en-US");
+  const dot = l => l === "Amazon" ? "var(--amz)" : l === "Noon" ? "var(--noon)" : "var(--neutral)";
+  let html = `<b>Sales on ${esc(y.label)} · ${money(y.gross)}</b>`;
+  y.groups.forEach(g => {
+    html += `<div class="tg"><span><i style="background:${dot(g.label)}"></i><b style="display:inline">${esc(g.label)}</b></span><span><b style="display:inline">${money(g.gross)}</b> · ${g.units} unit${g.units === 1 ? "" : "s"}</span></div>`;
+    if (!g.skus.length) html += `<div class="ts"><span>No sales</span><span></span></div>`;
+    g.skus.forEach(x => { html += `<div class="ts"><span>${esc(x.name)}</span><span>${money(x.gross)} · ${x.units}u</span></div>`; });
+  });
+  return html;
+}
+function wireYday(c){
+  const el = $(".tile[data-yd]"); if (!el) return;
+  const show = ev => { const r = el.getBoundingClientRect(); showTip(ydayTip(c), ev.clientX ? ev : {clientX: r.left + 20, clientY: r.bottom}); };
+  el.addEventListener("mouseenter", show); el.addEventListener("mousemove", show); el.addEventListener("mouseleave", hideTip);
+  el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); showTip(ydayTip(c), {clientX: r.left + 20, clientY: r.bottom + 160}); }); el.addEventListener("blur", hideTip);
+  el.addEventListener("click", ev => { if (tip.style.display === "block") hideTip(); else show(ev); });
+}
+/* ---------- bridge ---------- */
 function bridgeSteps(c){
   const ms = c.months, S = k => sum(ms, m => m[k]);
   const gross = S("gross"), refunds = S("refunds"), fees = S("fees"), ad = S("ad"), cogs = S("cogs");
@@ -406,7 +431,7 @@ function viewOverview(c){
     `<section class="card"><div class="card-head"><div><h2>Where the revenue goes</h2><p class="sub">Year to date, AED and % of gross revenue. Hover a bar for detail.</p></div></div>${bridge(c)}</section>` +
     `<section class="card"><div class="card-head"><div><h2>Monthly P&amp;L</h2><p class="sub">AED. Costs shown as negatives. ${c.key === "overall" ? "Use ▸ to split by channel or cost type." : "Use ▸ to see the cost breakdown."}</p></div></div>${plTable(c)}</section>` +
     `<section class="card note"><h2>About these numbers</h2><ul>${c.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></section>`;
-  return {html, after(){ mountChart("revChart", revO); mountChart("profChart", profO); const bel = $("#bridgeChart"); if (bel){ const d = () => waterfallChart(bel, c); d(); charts.push(d); } }};
+  return {html, after(){ wireYday(c); mountChart("revChart", revO); mountChart("profChart", profO); const bel = $("#bridgeChart"); if (bel){ const d = () => waterfallChart(bel, c); d(); charts.push(d); } }};
 }
 
 function periodMonths(c){ return state.period === "ytd" ? c.months.map(m => m.month) : [state.period]; }
