@@ -11,7 +11,7 @@
   --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --wash:rgba(11,11,11,.04);
   --good:#1d7a55; --crit:#c4574a; --pos:#4fae8a; --loss:#eaa093; --amz:#f2a65a; --noon:#6fa8dc; --neutral:#8aa0b4; --drop:#c9d3dc;
   --shadow:0 1px 2px rgba(11,11,11,.04);
-  --pos-bg:rgba(79,174,138,.17); --neg-bg:rgba(234,160,147,.30); --pct-bg:rgba(111,168,220,.18);
+  --cost:#f6d3cc; --pos-mid:#93d0b6; --pos-bg:rgba(79,174,138,.17); --neg-bg:rgba(234,160,147,.30); --pct-bg:rgba(111,168,220,.18);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -20,7 +20,7 @@
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
     --good:#4cc294; --crit:#ec9a8d; --pos:#4cb389; --loss:#d98577; --amz:#e0a15c; --noon:#6aa6e0; --neutral:#8ea3b7; --drop:#46535f;
     --shadow:none;
-    --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
+    --cost:#7a4a44; --pos-mid:#3c8d6c; --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
   }
 }
 :root[data-theme="dark"]{
@@ -29,7 +29,7 @@
   --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
   --good:#4cc294; --crit:#ec9a8d; --pos:#4cb389; --loss:#d98577; --amz:#e0a15c; --noon:#6aa6e0; --neutral:#8ea3b7; --drop:#46535f;
   --shadow:none;
-  --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
+  --cost:#7a4a44; --pos-mid:#3c8d6c; --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -93,7 +93,7 @@ main{padding:20px 0 56px}
 .chart .grid{stroke:var(--grid);stroke-width:1}
 .chart .base{stroke:var(--axis);stroke-width:1}
 .chart .lbl{fill:var(--ink2);font-size:11px;font-weight:600}
-.f-drop{fill:var(--drop)}
+.f-drop{fill:var(--drop)} .f-cost{fill:var(--cost)} .f-lossbar{fill:var(--crit)} .f-goodmid{fill:var(--pos-mid)}
 .chart .wv{fill:var(--ink);font-size:12px;font-weight:620}
 .chart .wp{fill:var(--ink2);font-size:11px}
 .chart .xl{fill:var(--ink2);font-size:12px}
@@ -348,7 +348,7 @@ function waterfallChart(el, c){
   let g = `<line class="base" x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}"/>`, bars = "", hits = "";
   steps.forEach((s, i) => {
     const cx = L + slot * i + slot / 2, x = cx - bw / 2, y1 = Y(s.hi), y0 = Y(s.lo), h = Math.max(2, y0 - y1);
-    const kind = s.kind === "fin" ? (s.v < 0 ? "f-crit" : "f-good") : s.kind === "tot" ? acc : "f-drop";
+    const kind = s.kind === "fin" ? (s.v < 0 ? "f-lossbar" : "f-good") : s.kind === "tot" ? (i === 0 ? "f-good" : "f-goodmid") : "f-cost";
     bars += `<rect class="${kind}" x="${x}" y="${y1}" width="${bw}" height="${h}" rx="4"/>`;
     if (i < n - 1){ const lvl = s.t ? s.v : s.to; g += `<line class="conn" x1="${x + bw}" x2="${x + slot}" y1="${Y(lvl)}" y2="${Y(lvl)}"/>`; }
     const ty = y1 - 18;
@@ -428,7 +428,7 @@ function viewOverview(c){
     `<section class="card"><div class="card-head"><div><h2>Gross revenue by month</h2><p class="sub">${c.key === "overall" ? "Amazon and Noon stacked" : "AED, before refunds, fees and ad spend"}</p></div></div>${c.key === "overall" ? `<div class="legend"><span><i style="background:var(--amz)"></i>Amazon</span><span><i style="background:var(--noon)"></i>Noon</span></div>` : ""}${chartBlock("revChart", revO)}</section>` +
     `<section class="card"><div class="card-head"><div><h2>Net profit by month</h2><p class="sub">After refunds, fees, ad spend and cost of goods</p></div></div>${hasLoss ? `<div class="legend"><span><i style="background:var(--pos)"></i>Profit</span><span><i style="background:var(--loss)"></i>Loss (below zero line)</span></div>` : ""}${chartBlock("profChart", profO)}</section>` +
     `</div>` +
-    `<section class="card"><div class="card-head"><div><h2>Where the revenue goes</h2><p class="sub">Year to date, AED and % of gross revenue. Hover a bar for detail.</p></div></div>${bridge(c)}</section>` +
+    `<section class="card"><div class="card-head"><div><h2>Where the revenue goes</h2><p class="sub">Year to date, AED and % of gross revenue. Hover a bar for detail.</p></div></div><div class="legend"><span><i style="background:var(--pos)"></i>Income</span><span><i style="background:var(--cost)"></i>Expense</span><span><i style="background:var(--crit)"></i>Loss</span></div>${bridge(c)}</section>` +
     `<section class="card"><div class="card-head"><div><h2>Monthly P&amp;L</h2><p class="sub">AED. Costs shown as negatives. ${c.key === "overall" ? "Use ▸ to split by channel or cost type." : "Use ▸ to see the cost breakdown."}</p></div></div>${plTable(c)}</section>` +
     `<section class="card note"><h2>About these numbers</h2><ul>${c.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></section>`;
   return {html, after(){ wireYday(c); mountChart("revChart", revO); mountChart("profChart", profO); const bel = $("#bridgeChart"); if (bel){ const d = () => waterfallChart(bel, c); d(); charts.push(d); } }};
