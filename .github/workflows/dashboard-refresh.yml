@@ -42,16 +42,12 @@ jobs:
           AMAZON_APP_JSON: ${{ secrets.AMAZON_APP_JSON }}
           GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON }}
 
-      - name: Check Noon credentials are configured
-        id: noon
+      - name: Write Noon credentials from secret
+        # The unified dashboard (Overall / Amazon / Noon) needs Noon data, so a missing secret
+        # fails the job loudly rather than publishing a page with a stale or empty Noon side.
         run: |
-          if [ -n "$NOON_APP_JSON" ]; then
-            printf '%s' "$NOON_APP_JSON" > "$RUNNER_TEMP/noon_app.json"
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Noon refresh skipped::NOON_APP_JSON secret is not set - the Noon and Overall sections of the live page will NOT refresh until it is added."
-          fi
+          test -n "$NOON_APP_JSON" || { echo "::error title=NOON_APP_JSON secret is not set::the dashboard cannot be built without Noon data"; exit 1; }
+          printf '%s' "$NOON_APP_JSON" > "$RUNNER_TEMP/noon_app.json"
         env:
           NOON_APP_JSON: ${{ secrets.NOON_APP_JSON }}
 
@@ -64,23 +60,7 @@ jobs:
           DASHBOARD_DATA_OUT: dashboard_data.json
           COST_LEDGER_PATH: inventory_cost_ledger.json
 
-      - name: Regenerate HTML fragments
-        working-directory: scripts
-        run: |
-          python gen_dashboard_pieces.py
-          python gen_dashboard_html.py
-
-      - name: Splice fragments into index.html and validate
-        id: splice
-        run: python scripts/splice_and_validate.py
-        env:
-          DASHBOARD_HTML_PATH: index.html
-
-      # Noon + Overall sections. These run AFTER the Amazon splice and a failure here fails the
-      # job (red run + GitHub failure email) rather than letting stale Noon/Overall numbers sit
-      # next to fresh Amazon ones - but the commit step below still pushes the Amazon refresh.
       - name: Pull fresh Noon data
-        if: steps.noon.outputs.enabled == 'true'
         working-directory: scripts
         run: python noon_refresh_data.py
         env:
@@ -89,7 +69,6 @@ jobs:
           DASHBOARD_DATA_OUT: dashboard_data.json
 
       - name: Merge Amazon + Noon into the Overall view
-        if: steps.noon.outputs.enabled == 'true'
         working-directory: scripts
         run: python merge_dashboard_data.py
         env:
@@ -97,12 +76,12 @@ jobs:
           NOON_DATA_OUT: noon_data.json
           COMBINED_DATA_OUT: dashboard_data_combined.json
 
-      - name: Inject Noon + Overall data into index.html
-        if: steps.noon.outputs.enabled == 'true'
-        run: python scripts/inject_unified_dashboard.py --data-only
+      - name: Build index.html
+        id: build
+        run: python scripts/build_dashboard.py
         env:
-          DASHBOARD_HTML_PATH: index.html
           COMBINED_DATA_OUT: scripts/dashboard_data_combined.json
+          DASHBOARD_HTML_OUT: index.html
 
       - name: Remove credential files
         if: always()
@@ -110,7 +89,7 @@ jobs:
           rm -f "$RUNNER_TEMP/amazon_app.json" "$RUNNER_TEMP/google_sheets_service_account.json" "$RUNNER_TEMP/noon_app.json"
 
       - name: Commit and push if changed
-        if: always() && steps.splice.outcome == 'success'
+        if: always() && steps.build.outcome == 'success'
         run: |
           git config user.name "neuronext-dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
