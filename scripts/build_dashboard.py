@@ -260,6 +260,23 @@ def ledger_rows(ledger, names):
     return out
 
 
+def day_block(groups, day, names):
+    """Sales on one day. groups = [(label, daily_sales_dict)] where daily_sales_dict is sku -> [{date, units, revenue}]."""
+    iso = day.isoformat()
+    out = []
+    for label, daily in groups:
+        skus = []
+        for sku, days in daily.items():
+            rows = [d for d in days if d["date"] == iso]
+            if rows:
+                skus.append({"name": names.get(sku, sku), "units": sum(d["units"] for d in rows),
+                             "gross": r2(sum(d["revenue"] for d in rows))})
+        skus.sort(key=lambda x: -x["gross"])
+        out.append({"label": label, "units": sum(x["units"] for x in skus), "gross": r2(sum(x["gross"] for x in skus)), "skus": skus})
+    return {"date": iso, "label": f"{day.day} {MONTH_NAMES[day.month - 1][:3]}", "units": sum(g["units"] for g in out),
+            "gross": r2(sum(g["gross"] for g in out)), "groups": out}
+
+
 def kpis(months, days_elapsed, as_of):
     ytd = {k: sum(m[k] for m in months) for k in ("gross", "refunds", "fees", "ad", "net_proceeds", "cogs", "net_profit", "orders", "units")}
     last = months[-1]
@@ -306,12 +323,16 @@ def build(combined, year):
     cost_order = order + [r["sku"] for r in extra]
 
     a_daily, n_daily = az.get("daily_sales", {}), nn.get("daily_sales", {})
+    yday = as_of_dt.date() - datetime.timedelta(days=1)
+    yday_groups = {"overall": [("Amazon", a_daily), ("Noon", n_daily)], "amazon": [("Amazon", a_daily)], "noon": [("Noon", n_daily)]}
     az_cost = cost_rows(az["cost_table"], names, cost_order)
     noon_cost = cost_rows(nn["cost_table"], names, cost_order)
     ov_cost = cost_rows(ov["cost_table"], names, cost_order)
 
     def channel(key, label, months, skus, cost, daily, inv, has_refunds, notes):
-        return {"key": key, "label": label, "months": months, "kpis": kpis(months, days, as_of_dt),
+        k = kpis(months, days, as_of_dt)
+        k["yday"] = day_block(yday_groups[key], yday, names)
+        return {"key": key, "label": label, "months": months, "kpis": k,
                 "has_refunds": has_refunds, "skus": sku_list(skus, order, names), "cost": cost,
                 "daily": daily_list(daily), "inventory": inv, "notes": notes}
 
