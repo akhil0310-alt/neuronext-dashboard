@@ -260,21 +260,50 @@ def ledger_rows(ledger, names):
     return out
 
 
-def day_block(groups, day, names):
-    """Sales on one day. groups = [(label, daily_sales_dict)] where daily_sales_dict is sku -> [{date, units, revenue}]."""
+DUBAI = datetime.timezone(datetime.timedelta(hours=4))
+# Cancelled / undeliverable orders are shown in the order view but never counted in totals.
+EXCLUDED_STATUSES = ("cancelled", "undeliverable")
+
+
+def norm_orders(rows, channel, names):
+    """Order lines for the Orders tab: UTC placed time -> Dubai, newest first."""
+    out = []
+    for r in rows or []:
+        placed = r.get("placed")
+        if not placed:
+            continue
+        dt = datetime.datetime.fromisoformat(placed.replace("Z", "+00:00")).astimezone(DUBAI)
+        sku = r.get("sku")
+        out.append({
+            "ch": channel, "id": r.get("id"), "t": dt.strftime("%Y-%m-%d %H:%M"), "sku": sku,
+            "name": names.get(sku, sku or "Unknown product"), "units": r.get("units") or 1,
+            "price": r.get("price"), "est": bool(r.get("est")), "status": r.get("status") or "placed",
+            "settled": bool(r.get("settled")), "posted": r.get("posted"), "net": r.get("net"),
+            "refund": r.get("refund"),
+        })
+    out.sort(key=lambda o: o["t"], reverse=True)
+    return out
+
+
+def day_block(groups, day):
+    """Ordered on one day (order date, cancelled/undeliverable excluded).
+    groups = [(label, normalised order lines)]."""
     iso = day.isoformat()
     out = []
-    for label, daily in groups:
-        skus = []
-        for sku, days in daily.items():
-            rows = [d for d in days if d["date"] == iso]
-            if rows:
-                skus.append({"name": names.get(sku, sku), "units": sum(d["units"] for d in rows),
-                             "gross": r2(sum(d["revenue"] for d in rows))})
-        skus.sort(key=lambda x: -x["gross"])
-        out.append({"label": label, "units": sum(x["units"] for x in skus), "gross": r2(sum(x["gross"] for x in skus)), "skus": skus})
+    for label, orders in groups:
+        agg = {}
+        for o in orders:
+            if o["t"][:10] != iso or o["status"] in EXCLUDED_STATUSES:
+                continue
+            a = agg.setdefault(o["name"], {"name": o["name"], "units": 0, "gross": 0.0, "est": False})
+            a["units"] += o["units"]
+            a["gross"] += o["price"] or 0
+            a["est"] = a["est"] or o["est"]
+        skus = sorted(({**v, "gross": r2(v["gross"])} for v in agg.values()), key=lambda x: -x["gross"])
+        out.append({"label": label, "units": sum(x["units"] for x in skus), "gross": r2(sum(x["gross"] for x in skus)),
+                    "est": any(x["est"] for x in skus), "skus": skus})
     return {"date": iso, "label": f"{day.day} {MONTH_NAMES[day.month - 1][:3]}", "units": sum(g["units"] for g in out),
-            "gross": r2(sum(g["gross"] for g in out)), "groups": out}
+            "gross": r2(sum(g["gross"] for g in out)), "est": any(g["est"] for g in out), "groups": out}
 
 
 def kpis(months, days_elapsed, as_of):
@@ -324,14 +353,19 @@ def build(combined, year):
 
     a_daily, n_daily = az.get("daily_sales", {}), nn.get("daily_sales", {})
     yday = as_of_dt.date() - datetime.timedelta(days=1)
-    yday_groups = {"overall": [("Amazon", a_daily), ("Noon", n_daily)], "amazon": [("Amazon", a_daily)], "noon": [("Noon", n_daily)]}
+    az_orders = norm_orders(az.get("orders"), "amazon", names)
+    noon_orders = norm_orders(nn.get("orders"), "noon", names)
+    all_orders = sorted(az_orders + noon_orders, key=lambda o: o["t"], reverse=True)
+    yday_groups = {"overall": [("Amazon", az_orders), ("Noon", noon_orders)], "amazon": [("Amazon", az_orders)],
+                   "noon": [("Noon", noon_orders)]}
+    orders_by_channel = {"overall": all_orders, "amazon": az_orders, "noon": noon_orders}
     az_cost = cost_rows(az["cost_table"], names, cost_order)
     noon_cost = cost_rows(nn["cost_table"], names, cost_order)
     ov_cost = cost_rows(ov["cost_table"], names, cost_order)
 
     def channel(key, label, months, skus, cost, daily, inv, has_refunds, notes):
         k = kpis(months, days, as_of_dt)
-        k["yday"] = day_block(yday_groups[key], yday, names)
+        k["yday"] = day_block(yday_groups[key], yday)
         return {"key": key, "label": label, "months": months, "kpis": k,
                 "has_refunds": has_refunds, "skus": sku_list(skus, order, names), "cost": cost,
                 "daily": daily_list(daily), "inventory": inv, "notes": notes}
@@ -394,10 +428,11 @@ def build(combined, year):
         "meta": {
             "year": year, "closed": closed,
             "as_of": (f"full year {year}, closed" if closed else as_of_dt.strftime("as of %d %b %Y, %H:%M GST")),
-            "as_of_iso": as_of_dt.isoformat(), "days": days, "year_pages": YEAR_PAGES,
+            "as_of_iso": as_of_dt.isoformat(), "today": as_of_dt.date().isoformat(), "days": days, "year_pages": YEAR_PAGES,
             "month_names": MONTH_NAMES, "fee_components": [{"key": k, "label": l} for k, l in FEE_COMPONENTS],
         },
         "channels": channels,
+        "orders": all_orders,
         "warehouse": {
             "ageing": ageing, "ageing_buckets": list((ageing_tot.get("buckets") or {}).keys()) or
             (list(ageing[0]["buckets"].keys()) if ageing else []),

@@ -151,8 +151,16 @@ def get_session():
         {"sub": creds["key_id"], "iat": int(time.time()), "jti": str(uuid.uuid4())},
         creds["private_key"], algorithm="RS256",
     )
-    resp = session.post(f"{BASE_URL}/identity/public/v1/api/login",
-                         json={"token": token, "default_project_code": creds["project_code"]})
+    # Retry transient network/DNS errors (this machine drops DNS lookups intermittently)
+    for attempt in range(5):
+        try:
+            resp = session.post(f"{BASE_URL}/identity/public/v1/api/login",
+                                 json={"token": token, "default_project_code": creds["project_code"]})
+            break
+        except requests.exceptions.ConnectionError:
+            if attempt == 4:
+                raise
+            time.sleep(5 * (attempt + 1))
     if resp.status_code != 200:
         raise RuntimeError(f"Noon login failed: {resp.status_code} {resp.text[:500]}")
     return session
@@ -187,6 +195,61 @@ def fetch_finance_rows(session, from_date, to_date):
 def fetch_ageing_rows(session):
     csv_text = run_export(session, "fbn_inventoryv2_aging", {})
     return list(csv.DictReader(io.StringIO(csv_text)))
+
+
+def fetch_orders_rows(session, from_date, to_date):
+    """Order-level export (noon_noonoms_ordersexport): one row per order item on ORDER date, including
+    orders that have not settled yet and cancelled / undeliverable ones. No price columns - price comes
+    from the finance export once an order settles (see build_noon_orders)."""
+    csv_text = run_export(session, "noon_noonoms_ordersexport", {"from_date": from_date, "to_date": to_date})
+    return list(csv.DictReader(io.StringIO(csv_text)))
+
+
+def build_noon_orders(order_rows, finance_rows):
+    """Order-level view (added 2026-11-01). One row per order item:
+    - price: finance 'Net Proceeds' once settled; otherwise estimated from the same product's latest
+      settled price (est=True) because the order export has no price.
+    - settled / posted / net: from the finance export, matched on item number (fallback order number)."""
+    fin_orders = [r for r in finance_rows if r["Transaction Type"] == "order"]
+    code_to_partner = {}
+    for r in fin_orders:
+        code_to_partner.setdefault(r.get("SKUs", ""), r.get("Partner SKUs", ""))
+    by_item, by_order = {}, defaultdict(list)
+    for r in finance_rows:
+        if r["Transaction Type"] in ("order", "order_update"):
+            by_item.setdefault(r.get("Item Nr", ""), []).append(r)
+            by_order[r.get("Order Nr", "")].append(r)
+    last_price = {}
+    for r in sorted(fin_orders, key=lambda r: r["Transaction Date"]):
+        if f(r, "Net Proceeds") > 0:
+            last_price[r.get("Partner SKUs", "")] = f(r, "Net Proceeds")
+
+    out = []
+    for r in sorted(order_rows, key=lambda r: r["order_placed_at"]):
+        code = r.get("sku", "")
+        partner = code_to_partner.get(code, "")
+        amazon_sku = NOON_SKU_MAP.get(partner)
+        rows = by_item.get(r.get("item_nr", "")) or []
+        if not rows:
+            rows = [x for x in by_order.get(r.get("order_nr", ""), []) if not x.get("Item Nr")] or []
+        sale = next((x for x in rows if x["Transaction Type"] == "order"), None)
+        raw_status = (r.get("item_status") or "").strip().lower()
+        if sale is not None:
+            price, est = f(sale, "Net Proceeds"), False
+        else:
+            lp = last_price.get(partner)
+            price, est = (lp, True) if lp else (None, True)
+        placed = (r.get("order_placed_at") or "").replace(" UTC", "").replace(" ", "T")
+        out.append({
+            "id": r.get("order_nr"), "item": r.get("item_nr"), "placed": placed + "Z" if placed else None,
+            "status": raw_status if raw_status in ("cancelled", "undeliverable", "delivered") else (raw_status or "placed"),
+            "sku": amazon_sku or partner or code, "partner_sku": partner, "units": 1,
+            "price": price, "est": est, "settled": sale is not None,
+            "posted": sale["Transaction Date"] if sale is not None else None,
+            "net": round(sum(f(x, "Total") for x in rows), 2) if sale is not None else None,
+            "delivered": (r.get("delivered_at") or "")[:10] or None,
+        })
+    return out
 
 
 def f(row, key):
@@ -481,6 +544,15 @@ def main():
     ageing_rows = fetch_ageing_rows(session)
     landed_costs = load_landed_costs(amz_path)
     data = build_noon_data(finance_rows, ageing_rows, as_of=as_of, landed_costs=landed_costs)
+    # Order-level view: current year only (closed years have no order tab). to_date is tomorrow so
+    # today's orders are included.
+    if year == real_now.year:
+        order_to = (real_now + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        order_rows = fetch_orders_rows(session, f"{year}-01-01", order_to)
+        data["orders"] = build_noon_orders(order_rows, finance_rows)
+        print(f"  {len(data['orders'])} order lines")
+    else:
+        data["orders"] = []
     with open(out_path, "w", encoding="utf-8") as fp:
         json.dump(data, fp, indent=2)
     print(f"Wrote {out_path}: {len(data['sku_rows'])} SKUs, {len(data['months'])} months, "

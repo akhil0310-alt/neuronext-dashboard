@@ -406,8 +406,15 @@ def get_amz_access_token():
     }).encode()
     req = urllib.request.Request("https://api.amazon.com/auth/o2/token", data=data, method="POST")
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read().decode())["access_token"]
+    # Retry transient network/DNS errors (this machine drops DNS lookups intermittently)
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.loads(resp.read().decode())["access_token"]
+        except urllib.error.URLError:
+            if attempt == 4:
+                raise
+            time.sleep(5 * (attempt + 1))
 
 
 def spapi_get(access_token, path, params, retries=6):
@@ -776,6 +783,135 @@ def aggregate(finance_pages):
         "orders_with_events": len(all_orders_with_events),
         "orders_by_month": orders_by_month,
     }
+
+
+# ---------------------------------------------------------------------------------------------
+# Order-level view (added 2026-11-01, user-requested). The P&L stays on the settlement basis
+# (Finances API posted date) because that ties to the statements / cash receipt. The order view
+# is on ORDER date (Orders API PurchaseDate) and is linked back to settlement by AmazonOrderId so
+# every order shows whether it has settled yet and what it netted. Order ITEMS (SKU, qty, price)
+# need one getOrderItems call per order (~0.5 req/s), so they are cached in a json file that the
+# repo/CI keeps - only new (or still-incomplete) orders are fetched on each run.
+# ---------------------------------------------------------------------------------------------
+ORDER_ITEMS_CACHE_PATH = os.environ.get(
+    "ORDER_ITEMS_CACHE_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "orders_cache_amazon.json"))
+ORDER_ITEMS_MAX_FETCH = int(os.environ.get("ORDER_ITEMS_MAX_FETCH", "400"))
+
+
+def load_order_items_cache():
+    try:
+        with open(ORDER_ITEMS_CACHE_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_order_items_cache(cache):
+    tmp = ORDER_ITEMS_CACHE_PATH + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(cache, f, separators=(",", ":"))
+    os.replace(tmp, ORDER_ITEMS_CACHE_PATH)
+
+
+def ensure_order_items(token, orders, cache):
+    """Fills `cache` (order id -> [{sku, qty, amount}]) for orders not cached yet, newest first.
+    A non-cancelled order cached without a price (Amazon omits ItemPrice while Pending) is
+    re-fetched until it has one."""
+    def needs(o):
+        entry = cache.get(o["AmazonOrderId"])
+        if entry is None:
+            return True
+        return o.get("OrderStatus") != "Canceled" and any(it.get("amount") is None for it in entry)
+    todo = sorted((o for o in orders if needs(o)), key=lambda o: o.get("PurchaseDate", ""), reverse=True)
+    print(f"order items: {len(todo)} order(s) to fetch (max {ORDER_ITEMS_MAX_FETCH} this run)")
+    for i, o in enumerate(todo[:ORDER_ITEMS_MAX_FETCH]):
+        oid = o["AmazonOrderId"]
+        try:
+            items = spapi_get(token, f"/orders/v0/orders/{oid}/orderItems", {})["payload"]["OrderItems"]
+        except Exception as e:  # keep going: one bad order must not sink the refresh
+            print(f"  order items failed for {oid}: {str(e)[:120]}")
+            continue
+        cache[oid] = [{
+            "sku": it.get("SellerSKU"), "qty": it.get("QuantityOrdered") or 0,
+            "amount": (float(it["ItemPrice"]["Amount"])
+                       if it.get("ItemPrice") and it["ItemPrice"].get("Amount") not in (None, "") else None),
+        } for it in items]
+        if (i + 1) % 25 == 0:
+            print(f"  fetched {i + 1}/{min(len(todo), ORDER_ITEMS_MAX_FETCH)}")
+            save_order_items_cache(cache)
+        time.sleep(2.1)
+    save_order_items_cache(cache)
+    return cache
+
+
+def compute_order_settlement(finance_pages):
+    """(AmazonOrderId, SKU) -> {posted: first posted day, net: sum of principal + non-tax charges +
+    fees + promotions (same inclusion rules as aggregate()), refund: principal refunded}."""
+    out = {}
+
+    def entry(oid, sku):
+        return out.setdefault((oid, sku), {"posted": None, "net": 0.0, "refund": 0.0})
+
+    for page in finance_pages:
+        for shp in page.get("ShipmentEventList", []) or []:
+            oid = shp.get("AmazonOrderId")
+            day = (shp.get("PostedDate") or "")[:10]
+            for item in shp.get("ShipmentItemList", []) or []:
+                e = entry(oid, item.get("SellerSKU") or "UNKNOWN")
+                if day and (e["posted"] is None or day < e["posted"]):
+                    e["posted"] = day
+                for chg in item.get("ItemChargeList", []) or []:
+                    if "Tax" not in (chg.get("ChargeType") or ""):
+                        e["net"] += (chg.get("ChargeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                for fee in item.get("ItemFeeList", []) or []:
+                    e["net"] += (fee.get("FeeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                for promo in item.get("PromotionList", []) or []:
+                    e["net"] += (promo.get("PromotionAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+        for ref in page.get("RefundEventList", []) or []:
+            oid = ref.get("AmazonOrderId")
+            for item in ref.get("ShipmentItemAdjustmentList", []) or []:
+                e = entry(oid, item.get("SellerSKU") or "UNKNOWN")
+                for chg in item.get("ItemChargeAdjustmentList", []) or []:
+                    ctype = chg.get("ChargeType") or ""
+                    val = (chg.get("ChargeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                    if ctype == "Principal":
+                        e["refund"] += val
+                    if "Tax" not in ctype:
+                        e["net"] += val
+                for fee in item.get("ItemFeeAdjustmentList", []) or []:
+                    e["net"] += (fee.get("FeeAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+                for promo in item.get("PromotionAdjustmentList", []) or []:
+                    e["net"] += (promo.get("PromotionAmount", {}) or {}).get("CurrencyAmount", 0) or 0
+    return out
+
+
+AMZ_ORDER_STATUS = {"Canceled": "cancelled", "Unfulfillable": "cancelled", "Shipped": "shipped",
+                    "PartiallyShipped": "shipped", "Pending": "placed", "Unshipped": "placed",
+                    "InvoiceUnconfirmed": "placed", "PendingAvailability": "placed"}
+
+
+def build_orders(orders, cache, settle, daily_sales):
+    """One row per order item. Price = Orders API ItemPrice; if Amazon has not priced the line yet
+    (Pending) it is estimated from the SKU's latest sale price and flagged est=True."""
+    last_price = {sku: rows[-1]["price"] for sku, rows in daily_sales.items() if rows and rows[-1].get("price")}
+    out = []
+    for o in sorted(orders, key=lambda o: o.get("PurchaseDate", "")):
+        oid = o["AmazonOrderId"]
+        status = AMZ_ORDER_STATUS.get(o.get("OrderStatus"), "placed")
+        items = cache.get(oid) or [{"sku": None, "qty": 1, "amount": None}]
+        for it in items:
+            sku, qty, amount, est = it["sku"], it["qty"], it.get("amount"), False
+            if amount is None:
+                lp = last_price.get(sku)
+                amount, est = (round(lp * qty, 2) if lp else None), True
+            st = settle.get((oid, sku))
+            out.append({
+                "id": oid, "placed": o.get("PurchaseDate"), "status": status, "sku": sku, "units": qty,
+                "price": amount, "est": est, "settled": bool(st and st["posted"]),
+                "posted": st["posted"] if st else None, "net": round(st["net"], 2) if st and st["posted"] else None,
+                "refund": round(st["refund"], 2) if st and st["refund"] else None,
+            })
+    return out
 
 
 def parse_returns(returns_rows):
@@ -1472,7 +1608,6 @@ def main():
 
     print("Fetching orders...")
     orders = fetch_orders(token, start, now if now < real_now else None)
-    print("Fetching order items skipped (not required for dashboard numbers - Finances API covers revenue/units)")
 
     print("Fetching finance events...")
     finance_pages = fetch_finance_events(token, start, now)
@@ -1494,6 +1629,15 @@ def main():
 
     agg = aggregate(finance_pages)
     data = build_dashboard_data(agg, orders, inventory, months, returns_rows, reimbursement_rows, removal_order_rows, as_of)
+
+    # Order-level view (current year only; closed years have no order tab)
+    if as_of.year == real_now.year:
+        print("Fetching order items (cached)...")
+        items_cache = ensure_order_items(token, orders, load_order_items_cache())
+        data["orders"] = build_orders(orders, items_cache, compute_order_settlement(finance_pages), data["daily_sales"])
+        print(f"  {len(data['orders'])} order lines")
+    else:
+        data["orders"] = []
 
     with open(out_path, "w") as f:
         json.dump(data, f, indent=2)

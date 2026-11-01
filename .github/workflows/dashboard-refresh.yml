@@ -93,7 +93,9 @@ jobs:
         run: |
           git config user.name "neuronext-dashboard-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add index.html
+          # scripts/orders_cache_amazon.json = Amazon order items already fetched (one API call per order);
+          # committing it lets the next run fetch only new orders
+          git add index.html scripts/orders_cache_amazon.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else

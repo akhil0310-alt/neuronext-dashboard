@@ -159,6 +159,11 @@ table.pl.open-fees .tgl-fees::before,table.pl.open-gross .tgl-gross::before,tabl
 .mix i{display:block;height:100%}
 .linkbtn{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer}
 .badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border)}
+.sb{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--wash);color:var(--ink2)}
+.sb.ok{background:var(--pos-bg);color:var(--good)} .sb.info{background:var(--pct-bg);color:var(--ink)} .sb.bad{background:var(--neg-bg);color:var(--crit)}
+tr.cx td{color:var(--muted);text-decoration:line-through} tr.cx td .sb,tr.cx td .note{text-decoration:none}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
+input.sel{min-width:190px}
 .badge{background:var(--pos-bg);border-color:transparent;color:var(--good)}
 .badge.warn{background:var(--neg-bg);color:var(--crit)}
 .note{color:var(--ink2);font-size:13px}
@@ -214,7 +219,7 @@ function accent(c){ return c.key === "amazon" ? "var(--amz)" : c.key === "noon" 
 function pcCls(n){ return "pc " + (n == null ? "" : n < -0.005 ? "tneg" : n > 0.005 ? "tpos" : ""); }
 function cls(n){ return n < -0.005 ? "neg" : n > 0.005 ? "pos" : ""; }
 
-const state = {ch:"overall", tab:"overview", period:"ytd", perUnit:false, sort:"gross", asc:false, sku:null, ledgerSku:null, ageMode:"units"};
+const state = {ch:"overall", tab:"overview", ordPeriod:"7d", ordStatus:"all", ordSearch:"", ordLimit:100, period:"ytd", perUnit:false, sort:"gross", asc:false, sku:null, ledgerSku:null, ageMode:"units"};
 const charts = [];
 
 /* ---------- tooltip ---------- */
@@ -300,7 +305,7 @@ function kpiStrip(c){
     {l: "Net proceeds", v: money(k.net_proceeds), sh: `<span class="chip">${pct(k.net_proceeds_pct)}</span> of gross revenue`, t: "Gross revenue after refunds, fees and ad spend, before cost of goods"},
     {l: "Net profit", v: money(k.net_profit), sh: `<span class="chip">${pct(k.net_profit_pct)}</span> of gross revenue`, c: k.net_profit < 0 ? "neg" : "pos", t: "Net proceeds minus cost of goods"},
     {l: "Ad spend", v: money(Math.abs(k.ad)), sh: `<span class="chip">${pct(k.ad_pct)}</span> of gross revenue`},
-    {l: "Sales yesterday", v: money(k.yday.gross), s: `${k.yday.label} · ${k.yday.units} unit${k.yday.units === 1 ? "" : "s"}`, hv: 1, t: "Hover for the platform and product breakup"},
+    {l: "Ordered yesterday", v: money(k.yday.gross), s: `${k.yday.label} · ${k.yday.units} unit${k.yday.units === 1 ? "" : "s"}${k.yday.est ? " · ~est." : ""}`, hv: 1, t: "Hover for the platform and product breakup"},
   ];
   return `<section class="kpis">${tiles.map(t => `<div class="tile ${t.hv ? "hv" : ""}" ${t.hv ? 'data-yd="1" tabindex="0"' : t.t ? `title="${esc(t.t)}"` : ""}><div class="l">${esc(t.l)}</div><div class="v ${t.c || ""}">${t.v}</div><div class="s">${t.sh || esc(t.s)}</div></div>`).join("")}</section>`;
 }
@@ -310,12 +315,13 @@ function ydayTip(c){
   const y = c.kpis.yday;
   const money = v => (v < 0 ? MINUS : "") + "AED " + Math.abs(Math.round(v)).toLocaleString("en-US");
   const dot = l => l === "Amazon" ? "var(--amz)" : l === "Noon" ? "var(--noon)" : "var(--neutral)";
-  let html = `<b>Sales on ${esc(y.label)} · ${money(y.gross)}</b>`;
+  let html = `<b>Ordered on ${esc(y.label)} · ${money(y.gross)}</b>`;
   y.groups.forEach(g => {
     html += `<div class="tg"><span><i style="background:${dot(g.label)}"></i><b style="display:inline">${esc(g.label)}</b></span><span><b style="display:inline">${money(g.gross)}</b> · ${g.units} unit${g.units === 1 ? "" : "s"}</span></div>`;
     if (!g.skus.length) html += `<div class="ts"><span>No sales</span><span></span></div>`;
-    g.skus.forEach(x => { html += `<div class="ts"><span>${esc(x.name)}</span><span>${money(x.gross)} · ${x.units}u</span></div>`; });
+    g.skus.forEach(x => { html += `<div class="ts"><span>${esc(x.name)}</span><span>${x.est ? "~" : ""}${money(x.gross)} · ${x.units}u</span></div>`; });
   });
+  html += `<div class="ts" style="margin-top:6px"><span>By order date; cancelled and undeliverable excluded.${y.est ? " ~ = price estimated, order not settled yet." : ""}</span><span></span></div>`;
   return html;
 }
 function wireYday(c){
@@ -509,6 +515,66 @@ function viewPricing(c){
   return {html};
 }
 
+/* ---------- Orders (order-date view) ---------- */
+const ORD_EXCLUDED = ["cancelled", "undeliverable"];
+const ORD_PERIODS = [["yesterday","Yesterday"], ["7d","Last 7 days"], ["30d","Last 30 days"], ["month","This month"], ["ytd","Year to date"]];
+const ORD_STATUS = [["all","All orders"], ["active","Counted (not cancelled)"], ["settled","Settled"], ["pending","Awaiting settlement"], ["excluded","Cancelled / undeliverable"]];
+const STATUS_LABEL = {delivered:"Delivered", shipped:"Shipped", placed:"Placed", cancelled:"Cancelled", undeliverable:"Undeliverable"};
+function addDays(iso, n){ const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function dmon(iso){ return iso ? parseInt(iso.slice(8, 10), 10) + " " + mshort(iso.slice(0, 7)) : ""; }
+function ordRange(){
+  const today = META.today, y = addDays(today, -1);
+  switch (state.ordPeriod){
+    case "yesterday": return [y, y];
+    case "30d": return [addDays(today, -29), today];
+    case "month": return [today.slice(0, 8) + "01", today];
+    case "ytd": return [today.slice(0, 4) + "-01-01", today];
+    default: return [addDays(today, -6), today];
+  }
+}
+const ordActive = o => ORD_EXCLUDED.indexOf(o.status) < 0;
+function ordRows(c){
+  const [a, b] = ordRange(), q = state.ordSearch.trim().toLowerCase();
+  return DATA.orders.filter(o => (c.key === "overall" || o.ch === c.key)).filter(o => { const d = o.t.slice(0, 10); return d >= a && d <= b && (!q || String(o.id).toLowerCase().indexOf(q) >= 0 || o.name.toLowerCase().indexOf(q) >= 0); });
+}
+function statusBadge(o){
+  const cl = o.status === "delivered" ? "ok" : o.status === "shipped" ? "info" : ORD_EXCLUDED.indexOf(o.status) >= 0 ? "bad" : "";
+  return `<span class="sb ${cl}">${STATUS_LABEL[o.status] || esc(o.status)}</span>` + (o.refund ? ` <span class="sb bad">Refunded</span>` : "");
+}
+function updateOrders(c){
+  const rows = ordRows(c), active = rows.filter(ordActive);
+  const val = a => sum(a, o => o.price || 0), anyEst = a => a.some(o => o.est);
+  const settled = active.filter(o => o.settled), pending = active.filter(o => !o.settled), excl = rows.filter(o => !ordActive(o));
+  const ids = a => new Set(a.map(o => o.ch + o.id)).size;
+  const m = (v, est) => `<span class="u">AED</span>${est ? "~" : ""}${num(v)}`;
+  const tiles = [
+    {l: "Orders", v: num(ids(active)), s: "not cancelled"},
+    {l: "Units", v: num(sum(active, o => o.units)), s: `${ORD_PERIODS.find(p => p[0] === state.ordPeriod)[1].toLowerCase()}`},
+    {l: "Ordered value", v: m(val(active), anyEst(active)), s: anyEst(active) ? "~ includes estimated prices" : "at order prices"},
+    {l: "Settled", v: m(val(settled), false), s: `${settled.length} line${settled.length === 1 ? "" : "s"} · net proceeds ${num(sum(settled, o => o.net || 0))}`},
+    {l: "Awaiting settlement", v: m(val(pending), anyEst(pending)), s: `${pending.length} line${pending.length === 1 ? "" : "s"}${anyEst(pending) ? " · ~ estimated" : ""}`},
+    {l: "Cancelled / undeliverable", v: num(excl.length), s: "listed, not counted"},
+  ];
+  $("#ordSummary").innerHTML = `<section class="kpis">${tiles.map(t => `<div class="tile"><div class="l">${t.l}</div><div class="v">${t.v}</div><div class="s">${esc(t.s)}</div></div>`).join("")}</section>`;
+  let list = rows;
+  if (state.ordStatus === "active") list = active; else if (state.ordStatus === "settled") list = settled;
+  else if (state.ordStatus === "pending") list = pending; else if (state.ordStatus === "excluded") list = excl;
+  const shown = list.slice(0, state.ordLimit), over = c.key === "overall";
+  const dot = ch => `<span class="dot" style="background:${ch === "amazon" ? "var(--amz)" : "var(--noon)"}"></span>`;
+  const body = shown.map(o => `<tr class="${ordActive(o) ? "" : "cx"}"><td class="l">${dmon(o.t.slice(0, 10))} <span class="note">${o.t.slice(11)}</span></td>${over ? `<td class="l">${dot(o.ch)}${o.ch === "amazon" ? "Amazon" : "Noon"}</td>` : ""}<td class="l">${esc(o.id)}</td><td class="l">${esc(o.name)}</td><td>${o.units}</td><td>${o.price == null || (o.est && !ordActive(o)) ? "—" : (o.est ? "~" : "") + num(o.price)}</td><td class="l">${statusBadge(o)}</td><td class="l">${!ordActive(o) ? "—" : o.settled ? `<span class="tpos">Settled ${dmon(o.posted)}</span>` : `<span class="note">Pending</span>`}</td><td>${o.settled && o.net != null ? num(o.net, 2) : "—"}</td></tr>`).join("");
+  $("#ordTable").innerHTML = list.length
+    ? `<table><thead><tr><th class="l">Ordered</th>${over ? `<th class="l">Channel</th>` : ""}<th class="l">Order</th><th class="l">Product</th><th>Units</th><th>Price (AED)</th><th class="l">Status</th><th class="l">Settlement</th><th>Net proceeds</th></tr></thead><tbody>${body}</tbody></table>` +
+      `<p class="note" style="margin:10px 2px 0">Showing ${shown.length} of ${list.length} line${list.length === 1 ? "" : "s"}. ${list.length > shown.length ? `<button class="linkbtn" data-ordmore="1">Show more</button>` : ""}</p>`
+    : `<div class="empty">No orders for this selection.</div>`;
+}
+function viewOrders(c){
+  const opt = (arr, cur) => arr.map(([k, l]) => `<option value="${k}" ${cur === k ? "selected" : ""}>${l}</option>`).join("");
+  const html = `<div id="ordSummary"></div><section class="card"><div class="card-head"><div><h2>Orders</h2><p class="sub">Listed by the date the order was placed. Cancelled and undeliverable orders are shown but not counted in any total. ~ marks a price estimated from the product's latest sale because the order has not settled yet. Settled orders show their net proceeds from the settlement statement.</p></div>` +
+    `<div class="controls"><label for="ordPeriod">Period</label><select class="sel" id="ordPeriod">${opt(ORD_PERIODS, state.ordPeriod)}</select><select class="sel" id="ordStatus" aria-label="Status">${opt(ORD_STATUS, state.ordStatus)}</select><input class="sel" id="ordSearch" type="search" placeholder="Search order or product" value="${esc(state.ordSearch)}"></div></div>` +
+    `<div class="overflow" id="ordTable"></div></section>`;
+  return {html, after(){ updateOrders(c); }};
+}
+
 function coverText(d){ return d == null ? "no sales" : d > 365 ? "1 yr+" : Math.round(d) + " d"; }
 function viewInventory(c){
   const inv = c.inventory, cols = inv.columns;
@@ -557,13 +623,15 @@ function viewReturns(){
 
 /* ---------- shell ---------- */
 function tabsFor(ch){
-  const t = [["overview","Overview"], ["products","Products"], ["pricing","Pricing"]];
+  const t = [["overview","Overview"], ["products","Products"]];
+  if (!META.closed) t.push(["orders","Orders"]);
+  t.push(["pricing","Pricing"]);
   if (!META.closed) t.push(["inventory","Inventory"]);
   if (ch === "overall" && !META.closed) t.push(["warehouse","Warehouse"]);
   if (ch === "amazon") t.push(["returns","Returns & claims"]);
   return t;
 }
-const VIEWS = {overview:viewOverview, products:viewProducts, pricing:viewPricing, inventory:viewInventory, warehouse:viewWarehouse, returns:viewReturns};
+const VIEWS = {overview:viewOverview, products:viewProducts, orders:viewOrders, pricing:viewPricing, inventory:viewInventory, warehouse:viewWarehouse, returns:viewReturns};
 
 function renderNav(){
   $("#channels").innerHTML = ["overall","amazon","noon"].map(k => `<button class="ch-btn" role="tab" data-ch="${k}" aria-selected="${state.ch === k}"><span class="dot"></span>${CH[k].label}</button>`).join("");
@@ -593,9 +661,13 @@ document.addEventListener("click", e => {
   if (t.dataset.tgl){ t.closest("table").classList.toggle("open-" + t.dataset.tgl); return; }
   if (t.dataset.pu != null){ state.perUnit = t.dataset.pu === "1"; return render(); }
   if (t.dataset.age){ state.ageMode = t.dataset.age; return render(); }
+  if (t.dataset.ordmore){ state.ordLimit += 200; return updateOrders(CH[state.ch]); }
 });
+document.addEventListener("input", e => { if (e.target.id === "ordSearch"){ state.ordSearch = e.target.value; state.ordLimit = 100; updateOrders(CH[state.ch]); } });
 document.addEventListener("change", e => {
-  if (e.target.id === "period"){ state.period = e.target.value; render(); }
+  if (e.target.id === "ordPeriod"){ state.ordPeriod = e.target.value; state.ordLimit = 100; updateOrders(CH[state.ch]); }
+  else if (e.target.id === "ordStatus"){ state.ordStatus = e.target.value; state.ordLimit = 100; updateOrders(CH[state.ch]); }
+  else if (e.target.id === "period"){ state.period = e.target.value; render(); }
   else if (e.target.id === "skuSel"){ state.sku = e.target.value; render(); }
   else if (e.target.id === "ledgerSel"){ state.ledgerSku = e.target.value; render(); }
 });
