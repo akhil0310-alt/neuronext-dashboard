@@ -421,6 +421,23 @@ def build_noon_data(finance_rows, ageing_rows, as_of=None, landed_costs=None):
     stock_table.sort(key=lambda r: -r["gross_quantity"])
     stock_totals["buckets"] = dict(stock_totals["buckets"])
 
+    # Per-day sales by Amazon-equivalent SKU (several Noon partner SKUs can map to one Amazon
+    # SKU, so aggregate) - feeds the unified dashboard's Price analysis tab, same shape as
+    # dashboard_data.json's daily_sales (added 2026-11-01).
+    daily_acc = defaultdict(lambda: defaultdict(lambda: {"units": 0, "revenue": 0.0}))
+    for r in order_rows:
+        asku = NOON_SKU_MAP.get(r.get("Partner SKUs", ""))
+        if not asku:
+            continue
+        day = r["Transaction Date"][:10]
+        daily_acc[asku][day]["units"] += 1
+        daily_acc[asku][day]["revenue"] += f(r, "Net Proceeds")
+    daily_sales = {
+        asku: [{"date": day, "units": v["units"], "revenue": round(v["revenue"], 2),
+                "price": round(v["revenue"] / v["units"], 2)} for day, v in sorted(days.items())]
+        for asku, days in daily_acc.items()
+    }
+
     return {
         "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
         "year": year,
@@ -429,6 +446,7 @@ def build_noon_data(finance_rows, ageing_rows, as_of=None, landed_costs=None):
         "monthly": monthly,
         "ytd": ytd,
         "sku_rows": sku_rows,
+        "daily_sales": daily_sales,
         "sku_map": NOON_SKU_MAP,
         "fbn_held_stock": stock_table,
         "fbn_held_stock_totals": stock_totals,
