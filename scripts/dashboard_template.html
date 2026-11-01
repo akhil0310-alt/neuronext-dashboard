@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NeuroNext Dashboard</title>
+<style>
+:root{
+  color-scheme: light;
+  --bg:#f6f8f7; --surface:#fdfefd; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10); --wash:rgba(11,11,11,.04);
+  --good:#1d7a55; --crit:#c4574a; --pos:#4fae8a; --loss:#eaa093; --amz:#f2a65a; --noon:#6fa8dc; --neutral:#8aa0b4; --drop:#c9d3dc;
+  --shadow:0 1px 2px rgba(11,11,11,.04);
+  --pos-bg:rgba(79,174,138,.17); --neg-bg:rgba(234,160,147,.30); --pct-bg:rgba(111,168,220,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
+    --good:#4cc294; --crit:#ec9a8d; --pos:#4cb389; --loss:#d98577; --amz:#e0a15c; --noon:#6aa6e0; --neutral:#8ea3b7; --drop:#46535f;
+    --shadow:none;
+    --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --wash:rgba(255,255,255,.05);
+  --good:#4cc294; --crit:#ec9a8d; --pos:#4cb389; --loss:#d98577; --amz:#e0a15c; --noon:#6aa6e0; --neutral:#8ea3b7; --drop:#46535f;
+  --shadow:none;
+  --pos-bg:rgba(76,179,137,.20); --neg-bg:rgba(217,133,119,.26); --pct-bg:rgba(106,166,224,.22);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
+button,select{font:inherit;color:inherit}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+@media (min-width:900px){.wrap{padding:0 24px}}
+
+/* header */
+.top{padding:18px 0 14px}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand h1{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em}
+.brand .asof{color:var(--ink2);font-size:13px;margin-top:2px}
+.top-right{display:flex;gap:8px;align-items:center}
+.sel{max-width:100%}
+.card-head>*,.controls{min-width:0;max-width:100%}
+.sel,.icon-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;min-height:34px}
+.icon-btn{width:34px;padding:0;display:grid;place-items:center}
+.navbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--grid)}
+.channels{display:inline-flex;gap:2px;background:var(--wash);border-radius:10px;padding:3px;margin:10px 0 0}
+.ch-btn{border:0;background:transparent;padding:7px 16px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--ink2);font-weight:550}
+.ch-btn .dot{width:8px;height:8px;border-radius:50%;background:var(--neutral)}
+.ch-btn[data-ch=amazon] .dot{background:var(--amz)} .ch-btn[data-ch=noon] .dot{background:var(--noon)}
+@media (max-width:640px){.channels{display:flex;width:100%}.ch-btn{flex:1;justify-content:center;padding:7px 8px}}
+.ch-btn[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--border),var(--shadow)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin-top:6px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:transparent;padding:10px 12px;cursor:pointer;color:var(--ink2);white-space:nowrap;border-bottom:2px solid transparent;font-weight:500}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.tab:hover{color:var(--ink)}
+main{padding:20px 0 56px}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow);min-width:0}
+.card h2{margin:0;font-size:15px;font-weight:620}
+.card .sub{color:var(--ink2);font-size:13px;margin:3px 0 0}
+.card-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.grid2{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:960px){.grid2{grid-template-columns:1fr 1fr}}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.controls label{color:var(--ink2);font-size:13px}
+.seg{display:inline-flex;background:var(--wash);border-radius:8px;padding:2px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:6px;cursor:pointer;color:var(--ink2);font-size:13px}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 0 0 1px var(--border)}
+
+/* KPI tiles */
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:16px}
+@media (min-width:720px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1180px){.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:0}
+.tile .l{color:var(--ink2);font-size:13px}
+.tile .v{font-size:clamp(20px,6vw,24px);font-weight:650;letter-spacing:-.015em;margin:4px 0 2px;white-space:nowrap}
+.tile .v .u{font-size:12px;font-weight:550;color:var(--ink2);margin-right:4px;letter-spacing:0}
+.tile .v.neg{color:var(--crit)} .tile .v.pos{color:var(--good)}
+.tile .s{color:var(--ink2);font-size:12px}
+
+/* charts */
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px;font-family:inherit}
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .base{stroke:var(--axis);stroke-width:1}
+.chart .lbl{fill:var(--ink2);font-size:11px;font-weight:600}
+.f-drop{fill:var(--drop)}
+.chart .wv{fill:var(--ink);font-size:12px;font-weight:620}
+.chart .wp{fill:var(--ink2);font-size:11px}
+.chart .xl{fill:var(--ink2);font-size:12px}
+.chart .xb{fill:var(--ink);font-weight:600}
+.chart .conn{stroke:var(--axis);stroke-width:1;stroke-dasharray:none}
+.f-amz{fill:var(--amz)} .f-noon{fill:var(--noon)} .f-neutral{fill:var(--neutral)} .f-crit{fill:var(--loss)} .f-good{fill:var(--pos)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;min-width:150px}
+.tip b{display:block;margin-bottom:4px}
+.tip div{display:flex;justify-content:space-between;gap:16px}
+.tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+details.tv{margin-top:10px;font-size:13px;color:var(--ink2)}
+details.tv summary{cursor:pointer}
+details.tv .overflow{margin-top:8px}
+
+/* bridge */
+.bridge{display:grid;gap:6px}
+.br{display:grid;grid-template-columns:minmax(110px,170px) 1fr 92px 56px;gap:10px;align-items:center;font-size:13px}
+.br .track{position:relative;height:20px}
+.br .bar{position:absolute;top:2px;height:16px;border-radius:4px;background:var(--drop)}
+.br .bar.tot{background:var(--neutral)} .br .bar.amz{background:var(--amz)} .br .bar.noon{background:var(--noon)} .br .bar.loss{background:var(--loss)} .br .bar.pos{background:var(--pos)}
+.br .zero{position:absolute;top:0;bottom:0;width:1px;background:var(--axis)}
+.br .val,.br .pct{text-align:right;font-variant-numeric:tabular-nums}
+.br .pct{color:var(--ink2)}
+.br.t .lab,.br.t .val{font-weight:620}
+@media (max-width:560px){.br{grid-template-columns:96px 1fr 76px;} .br .pct{display:none}}
+
+/* tables */
+.overflow{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+th{color:var(--ink2);font-weight:550;font-size:12px;background:var(--surface);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1}
+th.l,td.l{text-align:left}
+td:first-child{min-width:120px}
+@media (max-width:640px){td:first-child{white-space:normal;max-width:150px;min-width:110px}}
+th[data-sort]{cursor:pointer} th[data-sort]:hover{color:var(--ink)}
+tr.tot td{font-weight:620;border-top:1px solid var(--axis)}
+tr.strong td{font-weight:600}
+tr.sub td{color:var(--ink2)} tr.sub td:first-child{padding-left:26px}
+tr.meta td{color:var(--ink2)}
+tr.dim td{color:var(--ink2);font-style:italic}
+tr.sep td{border-top:1px solid var(--axis)}
+td.neg{color:var(--crit);background:var(--neg-bg)} td.pos{color:var(--good);background:var(--pos-bg)}
+td.pc{background:var(--pct-bg)}
+.tneg{color:var(--crit)} .tpos{color:var(--good)}
+.chip{display:inline-block;background:var(--pct-bg);border-radius:999px;padding:0 7px;color:var(--ink);font-weight:550;margin-right:2px}
+.pr .pcs{background:var(--pct-bg);border-radius:6px;padding:1px 6px}
+.pr span.neg{color:var(--crit)} .pr span.pos{color:var(--good)}
+td.dim{color:var(--muted)}
+.tgl{border:0;background:transparent;cursor:pointer;color:var(--ink2);padding:0 6px 0 0;font-size:11px}
+table.pl tr[data-g]{display:none}
+table.pl.open-fees tr[data-g=fees],table.pl.open-gross tr[data-g=gross],table.pl.open-profit tr[data-g=profit]{display:table-row}
+table.pl.open-fees .tgl-fees::before,table.pl.open-gross .tgl-gross::before,table.pl.open-profit .tgl-profit::before{content:"▾ "}
+.tgl::before{content:"▸ "}
+.mix{display:inline-flex;width:90px;height:8px;border-radius:4px;overflow:hidden;gap:2px;vertical-align:middle}
+.mix i{display:block;height:100%}
+.linkbtn{border:0;background:none;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer}
+.badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border)}
+.badge{background:var(--pos-bg);border-color:transparent;color:var(--good)}
+.badge.warn{background:var(--neg-bg);color:var(--crit)}
+.note{color:var(--ink2);font-size:13px}
+.note ul{margin:6px 0 0;padding-left:18px} .note li{margin:3px 0}
+.empty{padding:28px 8px;text-align:center;color:var(--ink2)}
+.hm td.c{background:color-mix(in srgb,var(--hm,var(--ink)) calc(var(--i,0)*55%),transparent)}
+
+/* price rows */
+.pr{display:grid;grid-template-columns:90px 1fr 90px 70px 80px 70px;gap:10px;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid var(--grid)}
+.pr.h{color:var(--ink2);font-size:12px;border-bottom:1px solid var(--axis)}
+.pr .t{display:block;height:12px;background:var(--wash);border-radius:3px;position:relative}
+.pr .t i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--neutral)}
+.pr.amazon .t i{background:var(--amz)} .pr.noon .t i{background:var(--noon)}
+.pr span:not(.t){text-align:right;font-variant-numeric:tabular-nums} .pr span:first-child{text-align:left}
+@media (max-width:640px){.pr{grid-template-columns:70px 1fr 62px 56px}.pr .hide-s{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><h1>NeuroNext</h1><div class="asof" id="asof"></div></div>
+  <div class="top-right">
+    <select class="sel" id="yearSel" aria-label="Year"></select>
+    <button class="icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
+  </div>
+</div></header>
+<div class="navbar"><div class="wrap">
+  <div class="channels" role="tablist" aria-label="Channel" id="channels"></div>
+  <div class="tabs" role="tablist" aria-label="Section" id="tabs"></div>
+</div></div>
+<main><div class="wrap" id="view"></div></main>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = __DASHBOARD_DATA__;
+</script>
+<script>
+(function(){
+"use strict";
+const META = DATA.meta, CH = DATA.channels, WH = DATA.warehouse, AZ = DATA.amazon_only;
+const MINUS = "−";
+const $ = (s, el) => (el || document).querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function num(n, d){ d = d || 0; if (n == null || isNaN(n)) return "—"; const a = Math.abs(n).toFixed(d); const neg = n < 0 && Number(a) > 0; return (neg ? MINUS : "") + Number(a).toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function cell(n, d){ return (n == null || Math.abs(n) < (d ? 0.005 : 0.5)) ? "—" : num(n, d); }
+function aed(n, d){ if (n == null || isNaN(n)) return "—"; const a = Math.abs(n).toFixed(d || 0); const neg = n < 0 && Number(a) > 0; return (neg ? MINUS : "") + "AED " + Number(a).toLocaleString("en-US", {minimumFractionDigits:d||0, maximumFractionDigits:d||0}); }
+function pct(n, d){ return n == null || isNaN(n) ? "—" : num(n, d == null ? 1 : d) + "%"; }
+function compact(n){ const a = Math.abs(n); const s = a >= 1e6 ? (a/1e6).toFixed(1).replace(/\.0$/,"") + "M" : a >= 1000 ? (a/1000).toFixed(a >= 10000 ? 0 : 1).replace(/\.0$/,"") + "k" : String(Math.round(a)); return (n < 0 ? MINUS : "") + s; }
+function mshort(m){ return META.month_names[parseInt(m.slice(5), 10) - 1].slice(0, 3); }
+function mlong(m){ return mshort(m) + " " + m.slice(0, 4); }
+function sum(a, f){ return a.reduce((s, x) => s + (f ? f(x) : x), 0); }
+function accent(c){ return c.key === "amazon" ? "var(--amz)" : c.key === "noon" ? "var(--noon)" : "var(--neutral)"; }
+function pcCls(n){ return "pc " + (n == null ? "" : n < -0.005 ? "tneg" : n > 0.005 ? "tpos" : ""); }
+function cls(n){ return n < -0.005 ? "neg" : n > 0.005 ? "pos" : ""; }
+
+const state = {ch:"overall", tab:"overview", period:"ytd", perUnit:false, sort:"gross", asc:false, sku:null, ledgerSku:null, ageMode:"units"};
+const charts = [];
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+function showTip(html, ev){
+  tip.innerHTML = html; tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + 14, y = ev.clientY - h - 10;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+  if (y < 8) y = ev.clientY + 16;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = y + "px";
+}
+function hideTip(){ tip.style.display = "none"; }
+
+/* ---------- column chart ---------- */
+function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+function colPath(x, y, w, h, r, top){
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return top ? `M${x},${y+h}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h}Z`
+             : `M${x},${y}V${y+h-r}Q${x},${y+h} ${x+r},${y+h}H${x+w-r}Q${x+w},${y+h} ${x+w},${y+h-r}V${y}Z`;
+}
+/* opts: months[], series[{label, cls, values[]}], stacked, signed, labelLast */
+function columnChart(el, o){
+  const W = Math.max(280, el.clientWidth || 560), H = 230, L = 42, R = 6, T = 16, B = 26;
+  const n = o.months.length;
+  const totals = o.months.map((_, i) => o.stacked ? sum(o.series, s => Math.max(0, s.values[i])) : Math.max(0, ...o.series.map(s => s.values[i])));
+  const mins = o.months.map((_, i) => Math.min(0, ...o.series.map(s => s.values[i])));
+  let ymax = Math.max(1, ...totals), ymin = Math.min(0, ...mins);
+  const step = niceStep((ymax - ymin) / 4);
+  ymax = Math.ceil(ymax / step) * step; ymin = Math.floor(ymin / step) * step;
+  const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+  const slot = (W - L - R) / n, bw = Math.min(24, slot * 0.6);
+  let g = "";
+  for (let v = ymin; v <= ymax + 1e-9; v += step) g += `<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${compact(v)}</text>`;
+  g += `<line class="base" x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}"/>`;
+  let bars = "", hits = "", lbl = "";
+  o.months.forEach((m, i) => {
+    const cx = L + slot * i + slot / 2, x = cx - bw / 2;
+    g += `<text x="${cx}" y="${H-8}" text-anchor="middle">${mshort(m)}</text>`;
+    if (o.stacked){
+      let base = 0; const live = o.series.filter(s => s.values[i] > 0);
+      live.forEach((s, k) => {
+        const v = s.values[i], y1 = Y(base + v), y0 = Y(base), gap = k < live.length - 1 || k > 0 ? 1 : 0;
+        const h = Math.max(1, y0 - y1 - (k > 0 ? 2 : 0));
+        bars += `<path class="${s.cls}" d="${colPath(x, y0 - h, bw, h, 4, k === live.length - 1)}"/>`;
+        base += v;
+      });
+    } else {
+      o.series.forEach(s => {
+        const v = s.values[i]; if (!v) return;
+        const y0 = Y(0), y1 = Y(v), top = Math.min(y0, y1), h = Math.max(1, Math.abs(y1 - y0));
+        bars += `<path class="${v < 0 ? "f-crit" : s.cls}" d="${colPath(x, top, bw, h, 4, v > 0)}"/>`;
+      });
+    }
+    hits += `<rect data-i="${i}" x="${L + slot * i}" y="${T}" width="${slot}" height="${H-T-B}" fill="transparent"/>`;
+  });
+  if (o.labelLast){
+    let li = -1; totals.forEach((t, i) => { if (o.series.some(s => s.values[i])) li = i; });
+    if (li >= 0){ const v = o.stacked ? totals[li] : o.series[0].values[li]; const cx = L + slot * li + slot / 2;
+      lbl = `<text class="lbl" x="${Math.min(cx, W - 22)}" y="${(v >= 0 ? Y(v) - 6 : Y(v) + 14)}" text-anchor="middle">${compact(v)}</text>`; }
+  }
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">${g}${bars}${lbl}${hits}</svg>`;
+  el.querySelectorAll("rect[data-i]").forEach(r => {
+    const i = +r.dataset.i;
+    const show = ev => showTip(`<b>${mlong(o.months[i])}</b>` + o.tip(i).map(t => `<div><span>${t.sw ? `<i style="background:${t.sw}"></i>` : ""}${esc(t.label)}</span><span>${t.value}</span></div>`).join(""), ev);
+    r.addEventListener("mousemove", show); r.addEventListener("mouseenter", show); r.addEventListener("mouseleave", hideTip);
+  });
+}
+function chartBlock(id, o, tableRows){
+  return `<div id="${id}" class="chart"></div>` +
+    `<details class="tv"><summary>View as a table</summary><div class="overflow"><table><thead><tr><th>Month</th>${o.series.map(s => `<th>${esc(s.label)}</th>`).join("")}</tr></thead><tbody>${
+      o.months.map((m, i) => `<tr><td>${mlong(m)}</td>${o.series.map(s => `<td>${cell(s.values[i])}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
+}
+function mountChart(id, o){ const el = $("#" + id); if (!el) return; const draw = () => columnChart(el, o); draw(); charts.push(draw); }
+
+/* ---------- KPI strip ---------- */
+function kpiStrip(c){
+  const k = c.kpis, m = k.mtd, mn = m.label.slice(0, 3);
+  const money = (v, d) => { const a = Math.abs(v).toFixed(d || 0); return (v < 0 && Number(a) > 0 ? MINUS : "") + `<span class="u">AED</span>` + Number(a).toLocaleString("en-US", {minimumFractionDigits:d || 0, maximumFractionDigits:d || 0}); };
+  const tiles = [
+    {l: m.label + " revenue", v: money(m.gross), s: `${mn} 1${m.day > 1 ? "–" + m.day : ""} · ${m.orders} orders · ${m.units} units`},
+    {l: "Gross revenue", v: money(k.gross), s: c.key === "amazon" && k.refunds_pct != null ? `Refund rate ${pct(k.refunds_pct)}` : `Year to date · ${k.gross_orders} orders`, t: "Revenue before refunds, fees and ad spend"},
+    {l: "Net proceeds", v: money(k.net_proceeds), sh: `<span class="chip">${pct(k.net_proceeds_pct)}</span> of gross revenue`, t: "Gross revenue after refunds, fees and ad spend, before cost of goods"},
+    {l: "Net profit", v: money(k.net_profit), sh: `<span class="chip">${pct(k.net_profit_pct)}</span> of gross revenue`, c: k.net_profit < 0 ? "neg" : "pos", t: "Net proceeds minus cost of goods"},
+    {l: "Ad spend", v: money(Math.abs(k.ad)), sh: `<span class="chip">${pct(k.ad_pct)}</span> of gross revenue`},
+    {l: "Revenue per day", v: money(k.rev_per_day, 1), s: `${num(k.units_per_day, 2)} units / day · ${k.days}d YTD`},
+  ];
+  return `<section class="kpis">${tiles.map(t => `<div class="tile" ${t.t ? `title="${esc(t.t)}"` : ""}><div class="l">${esc(t.l)}</div><div class="v ${t.c || ""}">${t.v}</div><div class="s">${t.sh || esc(t.s)}</div></div>`).join("")}</section>`;
+}
+
+/* ---------- revenue waterfall ---------- */
+function bridgeSteps(c){
+  const ms = c.months, S = k => sum(ms, m => m[k]);
+  const gross = S("gross"), refunds = S("refunds"), fees = S("fees"), ad = S("ad"), cogs = S("cogs");
+  const np = gross + refunds + fees + ad, prof = np - cogs;
+  const steps = [{l:"Gross revenue", v:gross, t:1, kind:"tot"}];
+  if (c.has_refunds) steps.push({l:"Refunds", v:refunds});
+  steps.push({l:"Fees & other costs", v:fees}, {l:"Ad spend", v:ad}, {l:"Net proceeds", v:np, t:1, kind:"tot"}, {l:"Cost of goods", v:-cogs}, {l:"Net profit", v:prof, t:1, kind:"fin"});
+  let run = 0;
+  steps.forEach(s => { if (s.t){ s.lo = Math.min(0, s.v); s.hi = Math.max(0, s.v); run = s.v; } else { const a = run, b = run + s.v; s.lo = Math.min(a, b); s.hi = Math.max(a, b); s.from = a; s.to = b; run = b; } });
+  return {steps, gross};
+}
+function waterfallChart(el, c){
+  const {steps, gross} = bridgeSteps(c);
+  const W = Math.max(300, el.clientWidth || 600), H = 290, L = 8, R = 8, T = 34, B = 52, n = steps.length;
+  let ymax = Math.max(...steps.map(s => s.hi)), ymin = Math.min(0, ...steps.map(s => s.lo));
+  const pad = (ymax - ymin) * 0.04; ymax += pad; if (ymin < 0) ymin -= pad;
+  const Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+  const slot = (W - L - R) / n, bw = Math.min(56, slot * 0.62);
+  const acc = c.key === "amazon" ? "f-amz" : c.key === "noon" ? "f-noon" : "f-neutral";
+  let g = `<line class="base" x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}"/>`, bars = "", hits = "";
+  steps.forEach((s, i) => {
+    const cx = L + slot * i + slot / 2, x = cx - bw / 2, y1 = Y(s.hi), y0 = Y(s.lo), h = Math.max(2, y0 - y1);
+    const kind = s.kind === "fin" ? (s.v < 0 ? "f-crit" : "f-good") : s.kind === "tot" ? acc : "f-drop";
+    bars += `<rect class="${kind}" x="${x}" y="${y1}" width="${bw}" height="${h}" rx="4"/>`;
+    if (i < n - 1){ const lvl = s.t ? s.v : s.to; g += `<line class="conn" x1="${x + bw}" x2="${x + slot}" y1="${Y(lvl)}" y2="${Y(lvl)}"/>`; }
+    const ty = y1 - 18;
+    bars += `<text class="wv" x="${cx}" y="${ty}" text-anchor="middle">${num(s.v)}</text><text class="wp" x="${cx}" y="${ty + 13}" text-anchor="middle">${gross ? pct(s.v / gross * 100) : ""}</text>`;
+    const words = s.l.split(" "); const lines = []; let cur = "";
+    words.forEach(w => { if ((cur + " " + w).trim().length > 12 && cur){ lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); }); lines.push(cur);
+    g += lines.map((ln, k) => `<text class="xl ${s.t ? "xb" : ""}" x="${cx}" y="${H - 30 + k * 13}" text-anchor="middle">${esc(ln)}</text>`).join("");
+    hits += `<rect data-i="${i}" x="${L + slot * i}" y="0" width="${slot}" height="${H - B + 20}" fill="transparent"/>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Where the revenue goes, year to date">${g}${bars}${hits}</svg>`;
+  el.querySelectorAll("rect[data-i]").forEach(r => {
+    const s = steps[+r.dataset.i];
+    const show = ev => showTip(`<b>${esc(s.l)}</b><div><span>AED</span><span>${num(s.v)}</span></div><div><span>% of gross revenue</span><span>${gross ? pct(s.v / gross * 100) : "—"}</span></div>`, ev);
+    r.addEventListener("mousemove", show); r.addEventListener("mouseenter", show); r.addEventListener("mouseleave", hideTip);
+  });
+}
+function bridge(c){
+  const {steps, gross} = bridgeSteps(c);
+  return `<div id="bridgeChart" class="chart"></div><details class="tv"><summary>View as a table</summary><div class="overflow"><table><thead><tr><th>Step</th><th>AED</th><th>% of gross revenue</th></tr></thead><tbody>${steps.map(s => `<tr class="${s.t ? "strong" : ""}"><td>${s.l}</td><td>${num(s.v)}</td><td>${gross ? pct(s.v / gross * 100) : "—"}</td></tr>`).join("")}</tbody></table></div></details>`;
+}
+
+/* ---------- monthly P&L ---------- */
+function plTable(c){
+  const ms = c.months, tot = k => sum(ms, m => m[k]);
+  const rows = [];
+  const addRow = (label, f, o) => rows.push(Object.assign({label, f}, o || {}));
+  const ytdOf = f => ({ytd: true, f});
+  addRow("Orders", m => m.orders, {cls:"meta", int:true});
+  addRow("Units", m => m.units, {cls:"meta", int:true});
+  addRow("Gross revenue", m => m.gross, {cls:"strong sep", tgl: c.key === "overall" ? "gross" : null});
+  if (c.key === "overall"){
+    addRow("Amazon", m => m.split.gross_amazon, {cls:"sub", g:"gross"});
+    addRow("Noon", m => m.split.gross_noon, {cls:"sub", g:"gross"});
+  }
+  if (c.has_refunds) addRow("Refunds", m => m.refunds);
+  addRow("Fees & other costs", m => m.fees, {tgl:"fees"});
+  META.fee_components.forEach(fc => {
+    if (ms.some(m => Math.abs(m.parts[fc.key] || 0) > 0.004)) addRow(fc.label, m => m.parts[fc.key] || 0, {cls:"sub", g:"fees"});
+  });
+  addRow("Ad spend", m => m.ad);
+  addRow("Net proceeds", m => m.net_proceeds, {cls:"tot"});
+  addRow("Cost of goods", m => -m.cogs);
+  addRow("Net profit", m => m.net_profit, {cls:"tot", color:true, tgl: c.key === "overall" ? "profit" : null});
+  if (c.key === "overall"){
+    addRow("Amazon", m => m.split.net_profit_amazon, {cls:"sub", g:"profit", color:true});
+    addRow("Noon", m => m.split.net_profit_noon, {cls:"sub", g:"profit", color:true});
+  }
+  addRow("Net margin (of gross revenue)", m => m.gross ? m.net_profit / m.gross * 100 : null, {cls:"meta", pct:true});
+  const fmt = (r, v) => v == null ? "—" : r.pct ? pct(v) : r.int ? (v ? num(v) : "—") : cell(v);
+  const head = `<tr><th>AED</th>${ms.map(m => `<th>${mshort(m.month)}</th>`).join("")}<th>YTD</th></tr>`;
+  const body = rows.map(r => {
+    const vals = ms.map(m => r.f(m));
+    let y;
+    if (r.pct) y = tot("gross") ? tot("net_profit") / tot("gross") * 100 : null; else y = sum(vals, v => v || 0);
+    const label = r.tgl ? `<button class="tgl tgl-${r.tgl}" data-tgl="${r.tgl}" aria-label="Show detail"></button>${r.label}` : r.label;
+    const td = v => `<td class="${r.color ? cls(v) : r.pct ? pcCls(v) : ""}">${fmt(r, v)}</td>`;
+    return `<tr class="${r.cls || ""}" ${r.g ? `data-g="${r.g}"` : ""}><td>${label}</td>${vals.map(td).join("")}${td(y).replace("<td", '<td style="font-weight:600"')}</tr>`;
+  }).join("");
+  return `<div class="overflow"><table class="pl"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ---------- views ---------- */
+function viewOverview(c){
+  const accCls = c.key === "amazon" ? "f-amz" : c.key === "noon" ? "f-noon" : "f-neutral";
+  const months = c.months.map(m => m.month);
+  const revO = c.key === "overall"
+    ? {months, stacked:true, labelLast:true, aria:"Gross revenue by month, Amazon and Noon",
+       series:[{label:"Amazon", cls:"f-amz", values:c.months.map(m => m.split.gross_amazon)}, {label:"Noon", cls:"f-noon", values:c.months.map(m => m.split.gross_noon)}],
+       tip:i => [{label:"Amazon", sw:"var(--amz)", value:aed(c.months[i].split.gross_amazon)}, {label:"Noon", sw:"var(--noon)", value:aed(c.months[i].split.gross_noon)}, {label:"Total", value:aed(c.months[i].gross)}]}
+    : {months, stacked:false, labelLast:true, aria:"Gross revenue by month", series:[{label:"Gross revenue", cls:accCls, values:c.months.map(m => m.gross)}],
+       tip:i => [{label:"Gross revenue", sw:accent(c), value:aed(c.months[i].gross)}, {label:"Orders", value:num(c.months[i].orders)}, {label:"Units", value:num(c.months[i].units)}]};
+  const hasLoss = c.months.some(m => m.net_profit < 0);
+  const profO = {months, stacked:false, labelLast:true, aria:"Net profit by month", series:[{label:"Net profit", cls:"f-good", values:c.months.map(m => m.net_profit)}],
+    tip:i => { const m = c.months[i]; const t = [{label:"Net profit", value:aed(m.net_profit)}]; if (c.key === "overall") t.push({label:"Amazon", sw:"var(--amz)", value:aed(m.split.net_profit_amazon)}, {label:"Noon", sw:"var(--noon)", value:aed(m.split.net_profit_noon)}); t.push({label:"Net proceeds", value:aed(m.net_proceeds)}, {label:"Cost of goods", value:aed(-m.cogs)}); return t; }};
+  const html = kpiStrip(c) +
+    `<div class="grid2">` +
+    `<section class="card"><div class="card-head"><div><h2>Gross revenue by month</h2><p class="sub">${c.key === "overall" ? "Amazon and Noon stacked" : "AED, before refunds, fees and ad spend"}</p></div></div>${c.key === "overall" ? `<div class="legend"><span><i style="background:var(--amz)"></i>Amazon</span><span><i style="background:var(--noon)"></i>Noon</span></div>` : ""}${chartBlock("revChart", revO)}</section>` +
+    `<section class="card"><div class="card-head"><div><h2>Net profit by month</h2><p class="sub">After refunds, fees, ad spend and cost of goods</p></div></div>${hasLoss ? `<div class="legend"><span><i style="background:var(--pos)"></i>Profit</span><span><i style="background:var(--loss)"></i>Loss (below zero line)</span></div>` : ""}${chartBlock("profChart", profO)}</section>` +
+    `</div>` +
+    `<section class="card"><div class="card-head"><div><h2>Where the revenue goes</h2><p class="sub">Year to date, AED and % of gross revenue. Hover a bar for detail.</p></div></div>${bridge(c)}</section>` +
+    `<section class="card"><div class="card-head"><div><h2>Monthly P&amp;L</h2><p class="sub">AED. Costs shown as negatives. ${c.key === "overall" ? "Use ▸ to split by channel or cost type." : "Use ▸ to see the cost breakdown."}</p></div></div>${plTable(c)}</section>` +
+    `<section class="card note"><h2>About these numbers</h2><ul>${c.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul></section>`;
+  return {html, after(){ mountChart("revChart", revO); mountChart("profChart", profO); const bel = $("#bridgeChart"); if (bel){ const d = () => waterfallChart(bel, c); d(); charts.push(d); } }};
+}
+
+function periodMonths(c){ return state.period === "ytd" ? c.months.map(m => m.month) : [state.period]; }
+function skuAgg(sk, months){
+  const a = {units:0, gross:0, refunds:0, fees:0, ad:0, cogs:0, net_profit:0, g_az:0, g_noon:0};
+  months.forEach(mo => { const m = sk.months[mo]; if (!m) return; a.units += m.units; a.gross += m.gross; a.refunds += m.refunds; a.fees += m.fees; a.ad += m.ad; a.cogs += m.cogs; a.net_profit += m.net_profit; a.g_az += m.gross_amazon || 0; a.g_noon += m.gross_noon || 0; });
+  return a;
+}
+function viewProducts(c){
+  const months = periodMonths(c);
+  let rows = c.skus.map(s => Object.assign({sku:s.sku, name:s.name}, skuAgg(s, months))).filter(r => r.units || r.gross);
+  rows.forEach(r => { r.asp = r.units ? r.gross / r.units : null; r.margin = r.gross ? r.net_profit / r.gross * 100 : null; });
+  const key = state.sort;
+  rows.sort((a, b) => { const x = a[key], y = b[key]; const d = typeof x === "string" ? x.localeCompare(y) : (x == null ? -Infinity : x) - (y == null ? -Infinity : y); return state.asc ? d : -d; });
+  const F = ["gross","refunds","fees","ad","cogs"];
+  const R = rows.reduce((t, r) => { F.concat(["units","g_az","g_noon"]).forEach(k => t[k] += r[k]); return t; }, {units:0,gross:0,refunds:0,fees:0,ad:0,cogs:0,g_az:0,g_noon:0});
+  // Channel totals for the period are the source of truth; anything the product rows do not account
+  // for (e.g. storage on stock that did not sell this month) is shown as its own row so Total ties to Overview.
+  const pm = c.months.filter(m => months.includes(m.month));
+  const T = {units:R.units, g_az:R.g_az, g_noon:R.g_noon};
+  F.forEach(k => T[k] = sum(pm, m => m[k]));
+  T.net_profit = T.gross + T.refunds + T.fees + T.ad - T.cogs;
+  T.asp = T.units ? T.gross / T.units : null; T.margin = T.gross ? T.net_profit / T.gross * 100 : null;
+  const U = {name:"Not allocated to a product", units:0, asp:null, margin:null, g_az:0, g_noon:0};
+  F.forEach(k => U[k] = T[k] - R[k]);
+  U.net_profit = U.gross + U.refunds + U.fees + U.ad - U.cogs;
+  const showU = F.some(k => Math.abs(U[k]) > 0.5);
+  const cols = [{k:"name", l:"Product", left:true}, {k:"units", l:"Units"}, {k:"gross", l:"Gross revenue", m:1}, ...(c.has_refunds ? [{k:"refunds", l:"Refunds", m:1}] : []),
+    {k:"asp", l:"Avg price"}, {k:"cogs", l:"Cost of goods", m:1, neg:1}, {k:"fees", l:"Fees & storage", m:1}, {k:"ad", l:"Ad spend", m:1}, {k:"net_profit", l:"Net profit", m:1, color:1}, {k:"margin", l:"Net margin", p:1}];
+  const pu = state.perUnit;
+  const val = (r, col) => { let v = r[col.k]; if (v == null) return null; if (col.neg) v = -v; if (pu && col.m) v = r.units ? v / r.units : null; return v; };
+  const fmt = (r, col) => { const v = val(r, col); if (col.k === "name") return esc(r.name); if (v == null) return "—"; if (col.p) return pct(v); if (col.k === "units") return v ? num(v) : "—"; return pu && col.m ? num(v, 1) : cell(v); };
+  const head = cols.map(col => `<th class="${col.left ? "l" : ""}" data-sort="${col.k}">${col.l}${state.sort === col.k ? (state.asc ? " ↑" : " ↓") : ""}</th>`).join("") + (c.key === "overall" ? `<th class="l">Channel mix</th>` : "");
+  const line = (r, tot, extra) => `<tr class="${tot ? "tot" : ""} ${extra || ""}">${cols.map(col => `<td class="${col.color ? cls(val(r, col)) : col.p ? pcCls(val(r, col)) : ""}">${tot && col.k === "name" ? "Total" : fmt(r, col)}</td>`).join("")}${c.key === "overall" ? `<td class="l">${mixBar(r)}</td>` : ""}</tr>`;
+  const monthOpts = `<option value="ytd">Year to date</option>` + c.months.filter(m => m.units || m.gross).map(m => `<option value="${m.month}" ${state.period === m.month ? "selected" : ""}>${mlong(m.month)}</option>`).join("");
+  // matrix
+  const mx = c.skus.map(s => ({name:s.name, v:c.months.map(m => (s.months[m.month] || {}).gross || 0)})).filter(r => sum(r.v) > 0).sort((a, b) => sum(b.v) - sum(a.v));
+  const max = Math.max(1, ...mx.flatMap(r => r.v));
+  const mxHtml = `<div class="overflow"><table class="hm"><thead><tr><th>Product</th>${c.months.map(m => `<th>${mshort(m.month)}</th>`).join("")}<th>YTD</th></tr></thead><tbody>${mx.map(r => `<tr><td>${esc(r.name)}</td>${r.v.map(v => `<td class="c" style="--i:${v / max};--hm:${accent(c)}">${cell(v)}</td>`).join("")}<td><b>${num(sum(r.v))}</b></td></tr>`).join("")}<tr class="tot"><td>Total</td>${c.months.map(m => `<td>${cell(m.gross)}</td>`).join("")}<td>${num(sum(c.months, m => m.gross))}</td></tr></tbody></table></div>`;
+  // cost & price
+  const usd = v => v == null ? "—" : num(v, 2);
+  const costHtml = `<div class="overflow"><table><thead><tr><th>Product</th><th>Product cost (USD)</th><th>Freight (USD)</th><th>Duty (USD)</th><th>VAT (USD)</th><th>Landed cost (USD)</th><th>Landed cost (AED)</th><th>Avg price (${c.label}, AED)</th><th>Margin at avg price</th><th>Price for 60% margin</th></tr></thead><tbody>${c.cost.map(r => `<tr><td>${esc(r.name)}${r.estimated ? " *" : ""}</td><td>${usd(r.product_usd)}</td><td>${usd(r.freight_usd)}</td><td>${usd(r.duty_usd)}</td><td>${usd(r.vat_usd)}</td><td>${usd(r.landed_usd)}</td><td><b>${num(r.landed, 2)}</b>${r.wac_revised ? " †" : ""}</td><td>${r.asp ? num(r.asp, 2) : "—"}</td><td class="${r.margin_pct == null ? "dim" : pcCls(r.margin_pct)}">${r.margin_pct == null ? "—" : pct(r.margin_pct)}</td><td>${num(r.rec_asp, 2)}</td></tr>`).join("")}</tbody></table></div>`;
+  const html = `<section class="card"><div class="card-head"><div><h2>Product-wise profitability</h2><p class="sub">AED. Ad spend is allocated to products by revenue share. Click a column to sort.</p></div>` +
+    `<div class="controls"><label for="period">Period</label><select class="sel" id="period">${monthOpts}</select><div class="seg" role="group" aria-label="Value basis"><button data-pu="0" aria-pressed="${!pu}">Total</button><button data-pu="1" aria-pressed="${pu}">Per unit</button></div></div></div>` +
+    `<div class="overflow"><table id="prodTable"><thead><tr>${head}</tr></thead><tbody>${rows.map(r => line(r)).join("")}${showU ? line(U, false, "dim") : ""}${line(T, true)}</tbody></table></div></section>` +
+    `<section class="card"><div class="card-head"><div><h2>Gross revenue by product and month</h2><p class="sub">AED, shaded by size</p></div></div>${mxHtml}</section>` +
+    `<section class="card"><div class="card-head"><div><h2>Cost per unit &amp; price</h2><p class="sub">Product cost, freight, duty and VAT are built up in USD (the supplier invoice currency); only the landed cost is converted to AED. † marks products whose AED cost is a weighted average after the UK batch, so it no longer equals the USD build-up converted. Landed cost is the same on every channel; average price is this channel's gross revenue per unit sold. 60% margin price = landed cost ÷ 0.4.</p></div></div>${costHtml}</section>`;
+  return {html};
+}
+function mixBar(r){
+  const t = r.g_az + r.g_noon; if (t <= 0) return "—";
+  return `<span class="mix" title="Amazon ${pct(r.g_az / t * 100, 0)} · Noon ${pct(r.g_noon / t * 100, 0)}"><i style="width:${r.g_az / t * 100}%;background:var(--amz)"></i><i style="width:${r.g_noon / t * 100}%;background:var(--noon)"></i></span> <span class="note">${pct(r.g_az / t * 100, 0)} / ${pct(r.g_noon / t * 100, 0)}</span>`;
+}
+
+function viewPricing(c){
+  const list = c.daily.filter(d => d.days.length).map(d => ({sku:d.sku, name:(c.cost.find(x => x.sku === d.sku) || {}).name || d.sku, units:sum(d.days, x => x.units), days:d.days})).sort((a, b) => b.units - a.units);
+  if (!list.length) return {html:`<section class="card"><div class="empty">No daily sales for this channel.</div></section>`};
+  if (!state.sku || !list.some(x => x.sku === state.sku)) state.sku = list[0].sku;
+  const cur = list.find(x => x.sku === state.sku);
+  const cost = (c.cost.find(x => x.sku === state.sku) || {}).landed;
+  const by = new Map();
+  cur.days.forEach(d => { const k = Math.round(d.price); const e = by.get(k) || {units:0, days:new Set()}; e.units += d.units; e.days.add(d.date); by.set(k, e); });
+  const prices = [...by.entries()].map(([p, e]) => ({p, units:e.units, days:e.days.size})).sort((a, b) => b.units - a.units);
+  const maxU = Math.max(...prices.map(x => x.units));
+  const wavg = sum(cur.days, d => d.units * d.price) / cur.units;
+  const dates = cur.days.map(d => d.date).sort();
+  const rowsHtml = prices.map(x => { const mg = cost != null && x.p ? (x.p - cost) / x.p * 100 : null;
+    return `<div class="pr ${c.key}"><span>AED ${num(x.p)}</span><span class="t"><i style="width:${x.units / maxU * 100}%"></i></span><span><b>${x.units}</b> unit${x.units === 1 ? "" : "s"}</span><span class="hide-s">${x.days} day${x.days === 1 ? "" : "s"}</span><span class="hide-s">${num(x.units / x.days, 1)} / day</span><span class="pcs ${mg == null ? "" : cls(mg)}">${mg == null ? "—" : pct(mg)}</span></div>`; }).join("");
+  const daily = cur.days.slice().sort((a, b) => b.date.localeCompare(a.date));
+  const html = `<section class="card"><div class="card-head"><div><h2>Price analysis</h2><p class="sub">Units sold at each price point, year to date, sorted by volume. Margin uses the product's landed cost${cost != null ? ` (AED ${num(cost, 2)})` : ""}.</p></div>` +
+    `<div class="controls"><label for="skuSel">Product</label><select class="sel" id="skuSel">${list.map(x => `<option value="${esc(x.sku)}" ${x.sku === state.sku ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div></div>` +
+    `<p class="note">${cur.units} units over ${new Set(cur.days.map(d => d.date)).size} selling days, ${dates[0]} to ${dates[dates.length - 1]} · weighted average price AED ${num(wavg, 1)}</p>` +
+    `<div><div class="pr h ${c.key}"><span>Price</span><span></span><span>Units</span><span class="hide-s">Days</span><span class="hide-s">Units / day</span><span>Margin</span></div>${rowsHtml}</div>` +
+    `<details class="tv"><summary>View daily sales as a table</summary><div class="overflow"><table><thead><tr><th>Date</th><th>Units</th><th>Price</th></tr></thead><tbody>${daily.map(d => `<tr><td>${d.date}</td><td>${d.units}</td><td>${num(d.price, 1)}</td></tr>`).join("")}</tbody></table></div></details></section>`;
+  return {html};
+}
+
+function coverText(d){ return d == null ? "no sales" : d > 365 ? "1 yr+" : Math.round(d) + " d"; }
+function viewInventory(c){
+  const inv = c.inventory, cols = inv.columns;
+  const head = `<tr><th>Product</th>${cols.map(x => `<th>${x.label}</th>`).join("")}<th>Sold, last 30 d</th><th>Per day</th><th>Cover</th><th>Reorder</th></tr>`;
+  const body = inv.rows.map(r => `<tr><td>${esc(r.name)}</td>${cols.map(x => `<td class="${x.key === "total" ? "strong" : ""}" ${x.key === "az" && r.az_unfulfillable ? `title="${r.az_unfulfillable} unfulfillable"` : ""}>${cell(r[x.key])}</td>`).join("")}<td>${cell(r.sold_recent)}</td><td>${num(r.per_day, 2)}</td><td>${coverText(r.cover_days)}</td><td>${r.needs_reorder ? `<span class="badge warn">▲ Order ${num(r.reorder_qty)}</span>` : `<span class="badge">✓ OK</span>`}</td></tr>`).join("");
+  const T = k => sum(inv.rows, r => r[k] || 0);
+  const foot = `<tr class="tot"><td>Total</td>${cols.map(x => `<td>${num(T(x.key))}</td>`).join("")}<td>${num(T("sold_recent"))}</td><td>${num(T("per_day"), 2)}</td><td></td><td></td></tr>`;
+  let html = `<section class="card"><div class="card-head"><div><h2>Stock &amp; reorder</h2><p class="sub">Units. Per-day sales is the last 30 days ÷ 30. Cover is total stock ÷ per-day sales; reorder is flagged when stock is at or below 90 days of sales.${c.key === "amazon" ? " Amazon stock includes unfulfillable units (hover for the count)." : ""}</p></div></div><div class="overflow"><table><thead>${head}</thead><tbody>${body}${foot}</tbody></table></div></section>`;
+  if (c.key === "noon") html += noonFbn();
+  if (c.key !== "overall") html += `<section class="card note"><p style="margin:0">Warehouse stock is shared by every channel. Its ageing and weighted-average costing are on <button class="linkbtn" data-ch="overall" data-tab="warehouse">Overall → Warehouse</button>.</p></section>`;
+  return {html};
+}
+function noonFbn(){
+  const f = WH.noon_fbn; if (!f.rows.length) return "";
+  const bk = Object.keys(f.rows[0].buckets);
+  return `<section class="card"><div class="card-head"><div><h2>Stock at Noon by age</h2><p class="sub">Units held at Noon fulfillment centres, latest snapshot ${esc(f.rows[0].snapshot)}</p></div></div><div class="overflow"><table><thead><tr><th>Product</th><th class="l">Condition</th><th>Total</th>${bk.map(b => `<th>${b} d</th>`).join("")}</tr></thead><tbody>${f.rows.map(r => `<tr><td>${esc(r.name)}</td><td class="l">${esc(r.condition)}</td><td><b>${r.qty}</b></td>${bk.map(b => `<td>${cell(r.buckets[b])}</td>`).join("")}</tr>`).join("")}<tr class="tot"><td>Total</td><td></td><td>${f.totals.gross_quantity}</td>${bk.map(b => `<td>${cell((f.totals.buckets || {})[b])}</td>`).join("")}</tr></tbody></table></div></section>`;
+}
+
+function viewWarehouse(){
+  const bk = WH.ageing_buckets, units = state.ageMode === "units";
+  const val = (r, b) => units ? r.buckets[b].units : r.buckets[b].value;
+  const max = Math.max(1, ...WH.ageing.flatMap(r => bk.map(b => val(r, b))));
+  const PV = WH.ageing_provision;
+  const ageBody = WH.ageing.map(r => `<tr><td>${esc(r.name)}</td><td>${num(r.landed, 2)}</td><td><b>${num(r.marked_down, 2)}</b></td><td><b>${num(units ? r.units : r.value)}</b></td>${bk.map(b => `<td class="c" style="--i:${val(r, b) / max};--hm:${PV[b] > 0 ? "var(--loss)" : "var(--pos)"}">${cell(val(r, b))}</td>`).join("")}<td>${cell(-r.provision)}</td><td><b>${num(r.marked_value)}</b></td></tr>`).join("");
+  const tb = WH.ageing_totals;
+  const ageFoot = `<tr class="tot"><td>Total</td><td></td><td></td><td>${num(units ? tb.units : tb.value)}</td>${bk.map(b => `<td>${cell(units ? (tb.buckets[b] || {}).units : (tb.buckets[b] || {}).value)}</td>`).join("")}<td>${num(-tb.provision)}</td><td>${num(tb.marked_value)}</td></tr>`;
+  const L = WH.ledger; if (!state.ledgerSku || !L.some(x => x.sku === state.ledgerSku)) state.ledgerSku = (L[0] || {}).sku;
+  const cur = L.find(x => x.sku === state.ledgerSku);
+  const html = `<section class="card"><div class="card-head"><div><h2>Inventory ageing</h2><p class="sub">Warehouse stock by age in days, first in first out. ${units ? "Units" : "Value at landed cost, AED"} in the age columns; the percentage under each age is the provision applied. Marked-down cost = landed cost less the blended provision; provision and value after provision are in AED.</p></div><div class="seg" role="group" aria-label="Basis"><button data-age="units" aria-pressed="${units}">Units</button><button data-age="value" aria-pressed="${!units}">Value</button></div></div>` +
+    `<div class="overflow"><table class="hm"><thead><tr><th>Product</th><th>Landed cost</th><th>Marked-down cost</th><th>Total</th>${bk.map(b => `<th>${b}<br><span class="note">${Math.round(PV[b] * 100)}%</span></th>`).join("")}<th>Provision (AED)</th><th>Value after provision (AED)</th></tr></thead><tbody>${ageBody}${ageFoot}</tbody></table></div></section>` +
+    `<section class="card"><div class="card-head"><div><h2>Weighted-average cost</h2><p class="sub">Current cost per unit across every dated batch received this year. Units sold take the average cost from each batch's date forward.</p></div></div><div class="overflow"><table><thead><tr><th>Product</th><th>Current cost (AED)</th><th>Last batch</th><th>Days since</th><th>Units received</th><th>From UAE</th><th>UAE cost</th><th>From UK</th><th>UK cost</th></tr></thead><tbody>${L.map(r => `<tr><td>${esc(r.name)}</td><td><b>${num(r.wac, 2)}</b></td><td>${r.last_batch}</td><td>${r.days_since}</td><td>${num(r.qty)}</td><td>${cell(r.uae_qty)}</td><td>${r.uae_cost == null ? "—" : num(r.uae_cost, 2)}</td><td>${cell(r.uk_qty)}</td><td>${r.uk_cost == null ? "—" : num(r.uk_cost, 2)}</td></tr>`).join("")}</tbody></table></div></section>` +
+    `<section class="card"><div class="card-head"><div><h2>Batch detail</h2><p class="sub">Every batch behind a product's running cost, oldest first.</p></div><div class="controls"><label for="ledgerSel">Product</label><select class="sel" id="ledgerSel">${L.map(x => `<option value="${esc(x.sku)}" ${x.sku === state.ledgerSku ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></div></div>` +
+    `<div class="overflow"><table><thead><tr><th>Date</th><th>Units</th><th>Cost / unit</th><th>Running units</th><th>Running cost</th><th class="l">Note</th></tr></thead><tbody>${cur ? cur.batches.map(b => `<tr><td>${b.date}</td><td>${num(b.qty)}</td><td>${num(b.cost, 2)}</td><td>${num(b.run_qty)}</td><td>${num(b.run_wac, 2)}</td><td class="l" style="white-space:normal;min-width:260px">${esc(b.note)}</td></tr>`).join("") : ""}</tbody></table></div></section>`;
+  return {html};
+}
+
+function viewReturns(){
+  const R = AZ.returns, tot = k => sum(R, r => r[k]);
+  const ret = R.length ? `<div class="overflow"><table><thead><tr><th>Product</th><th>Returned</th><th>Sellable</th><th>Not sellable</th><th>Customer damaged</th><th>Defective</th><th>Amazon damaged</th><th>Other</th><th>Cost reversed</th></tr></thead><tbody>${R.map(r => `<tr><td>${esc(r.name)}</td><td><b>${r.total}</b></td><td>${cell(r.sellable)}</td><td>${cell(r.non_sellable)}</td><td>${cell(r.customer_damaged)}</td><td>${cell(r.defective)}</td><td>${cell(r.amazon_damaged)}</td><td>${cell(r.other)}</td><td>${cell(r.cogs_reversed)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td>${tot("total")}</td><td>${tot("sellable")}</td><td>${tot("non_sellable")}</td><td>${tot("customer_damaged")}</td><td>${tot("defective")}</td><td>${tot("amazon_damaged")}</td><td>${tot("other")}</td><td>${num(tot("cogs_reversed"))}</td></tr></tbody></table></div>` : `<div class="empty">No returns recorded.</div>`;
+  const RB = AZ.reimbursements;
+  const reimb = RB.length ? `<div class="overflow"><table><thead><tr><th>Date</th><th class="l">Product</th><th class="l">Reason</th><th>Units</th><th>Amount (AED)</th></tr></thead><tbody>${RB.map(r => `<tr><td>${r.date}</td><td class="l">${esc(r.name)}</td><td class="l">${esc(r.reason)}</td><td>${r.qty}</td><td>${num(r.amount, 2)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No reimbursements this year.</div>`;
+  const RM = AZ.removals.slice().sort((a, b) => b.date.localeCompare(a.date));
+  const rem = RM.length ? `<div class="overflow" style="max-height:420px;overflow-y:auto"><table><thead><tr><th>Date</th><th class="l">Product</th><th class="l">Source</th><th class="l">Status</th><th class="l">Disposition</th><th>Requested</th><th>Shipped</th><th>Cancelled</th></tr></thead><tbody>${RM.map(r => `<tr><td>${r.date}</td><td class="l">${esc(r.name)}</td><td class="l">${esc(r.source)}</td><td class="l">${esc(r.status)}</td><td class="l">${esc(r.disposition)}</td><td>${r.requested}</td><td>${r.shipped}</td><td>${r.cancelled}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">No removal orders.</div>`;
+  return {html:`<section class="card"><div class="card-head"><div><h2>Returns</h2><p class="sub">Units returned, split by condition. Cost reversed is the landed cost of units that went back into sellable stock.</p></div></div>${ret}</section><section class="card"><div class="card-head"><div><h2>FBA reimbursements</h2></div></div>${reimb}</section><section class="card"><div class="card-head"><div><h2>FBA removal orders</h2><p class="sub">Newest first</p></div></div>${rem}</section>`};
+}
+
+/* ---------- shell ---------- */
+function tabsFor(ch){
+  const t = [["overview","Overview"], ["products","Products"], ["pricing","Pricing"]];
+  if (!META.closed) t.push(["inventory","Inventory"]);
+  if (ch === "overall" && !META.closed) t.push(["warehouse","Warehouse"]);
+  if (ch === "amazon") t.push(["returns","Returns & claims"]);
+  return t;
+}
+const VIEWS = {overview:viewOverview, products:viewProducts, pricing:viewPricing, inventory:viewInventory, warehouse:viewWarehouse, returns:viewReturns};
+
+function renderNav(){
+  $("#channels").innerHTML = ["overall","amazon","noon"].map(k => `<button class="ch-btn" role="tab" data-ch="${k}" aria-selected="${state.ch === k}"><span class="dot"></span>${CH[k].label}</button>`).join("");
+  $("#tabs").innerHTML = tabsFor(state.ch).map(([k, l]) => `<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab === k}">${l}</button>`).join("");
+}
+function render(){
+  if (!tabsFor(state.ch).some(t => t[0] === state.tab)) state.tab = "overview";
+  charts.length = 0; hideTip(); renderNav();
+  const c = CH[state.ch], v = VIEWS[state.tab](c);
+  $("#view").innerHTML = v.html;
+  if (v.after) v.after();
+  document.title = `${c.label} · NeuroNext`;
+}
+function go(ch, tab){ state.ch = ch; state.tab = tab; const h = `#${ch}/${tab}`; try { if (location.hash !== h) history.replaceState(null, "", h); } catch (e) {} render(); window.scrollTo(0, 0); }
+function route(){
+  const m = location.hash.replace(/^#/, "").split("/");
+  if (CH[m[0]]) state.ch = m[0];
+  if (m[1]) state.tab = m[1];
+  render();
+}
+document.addEventListener("click", e => {
+  const th = e.target.closest("th[data-sort]");
+  if (th){ const k = th.dataset.sort; state.asc = state.sort === k ? !state.asc : k === "name"; state.sort = k; return render(); }
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.ch) return go(t.dataset.ch, t.dataset.tab || state.tab);
+  if (t.dataset.tab) return go(state.ch, t.dataset.tab);
+  if (t.dataset.tgl){ t.closest("table").classList.toggle("open-" + t.dataset.tgl); return; }
+  if (t.dataset.pu != null){ state.perUnit = t.dataset.pu === "1"; return render(); }
+  if (t.dataset.age){ state.ageMode = t.dataset.age; return render(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "period"){ state.period = e.target.value; render(); }
+  else if (e.target.id === "skuSel"){ state.sku = e.target.value; render(); }
+  else if (e.target.id === "ledgerSel"){ state.ledgerSku = e.target.value; render(); }
+});
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => charts.forEach(f => f()), 120); });
+addEventListener("hashchange", route);
+
+/* header: year + theme */
+$("#asof").textContent = `Amazon and Noon · ${META.as_of}`;
+const ys = $("#yearSel");
+Object.keys(META.year_pages).sort().reverse().forEach(y => { const o = document.createElement("option"); o.value = y; o.textContent = y === String(META.year) ? y : y + (y < String(META.year) ? " (closed)" : ""); ys.appendChild(o); });
+ys.value = String(META.year);
+ys.addEventListener("change", () => { const u = META.year_pages[ys.value]; if (u) location.href = u + location.hash; });
+try { const t = localStorage.getItem("nn-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("#themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("nn-theme", next); } catch (e) {}
+});
+route();
+})();
+</script>
+</body>
+</html>
